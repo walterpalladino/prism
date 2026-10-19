@@ -92,6 +92,10 @@ def to_svg(rows: list[str]) -> str:
             f'<path d="{"".join(cells)}"/></svg>\n')
 
 
+# Counter-clockwise rotate: the clockwise icon mirrored left to right.
+ICONS["rotate_ccw"] = [row[::-1] for row in ICONS["rotate"]]
+
+
 def main() -> None:
     OUT.mkdir(parents=True, exist_ok=True)
     for name, rows in ICONS.items():

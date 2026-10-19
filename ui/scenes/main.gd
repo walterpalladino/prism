@@ -13,7 +13,7 @@ const MENUS: Array[Array] = [
 	["Brush", [["Restore built-in", "prism_brush_restore", "brush"], ["Flip horizontal", "prism_brush_flip_h", "flip_h"], ["Flip vertical", "prism_brush_flip_v", "flip_v"], ["Rotate 90°", "prism_brush_rotate", "rotate"]]],
 	["Mode", [["Color", "mode_color", ""], ["Replace", "mode_replace", ""], ["Shade", "mode_shade", ""]]],
 	["Anim", [["Play / stop", "prism_play", "play"], ["Previous frame", "prism_frame_prev", "prev"], ["Next frame", "prism_frame_next", "next"], ["", "", ""], ["New frame", "prism_frame_new", "plus"], ["Duplicate frame", "prism_frame_duplicate", "duplicate"], ["Duplicate frame (linked)", "frame_duplicate_linked", "duplicate"], ["Delete frame", "frame_delete", "trash"], ["", "", ""], ["New layer", "layer_new", "plus"], ["Duplicate layer", "layer_duplicate", "duplicate"], ["Delete layer", "layer_delete", "trash"], ["", "", ""], ["New tag from selection", "tag_new", ""], ["", "", ""], ["Onion skin", "prism_toggle_onion", "eye"], ["Color cycling preview", "prism_toggle_cycling", "play"]]],
-	["Effect", [["Flip cel horizontally", "fx_flip_h", "flip_h"], ["Flip cel vertically", "fx_flip_v", "flip_v"], ["Rotate cel 180°", "fx_rotate_180", "rotate"], ["", "", ""], ["Outline with FG", "fx_outline", ""], ["Replace FG with BG", "fx_replace", ""]]],
+	["Effect", [["Flip cel horizontally", "fx_flip_h", "flip_h"], ["Flip cel vertically", "fx_flip_v", "flip_v"], ["Rotate cel 90° clockwise", "fx_rotate_cw", "rotate"], ["Rotate cel 90° counter-clockwise", "fx_rotate_ccw", "rotate_ccw"], ["", "", ""], ["Outline with FG", "fx_outline", ""], ["Replace FG with BG", "fx_replace", ""]]],
 	["View", [["Zoom in", "prism_zoom_in", "zoom_in"], ["Zoom out", "prism_zoom_out", "zoom_out"], ["Zoom 1:1", "prism_zoom_reset", ""], ["Fit", "fit", ""], ["", "", ""], ["Pixel grid", "prism_toggle_grid", "grid"], ["Tile grid: off / 8 / 16 / 32", "tile_grid", "grid"], ["Timeline", "prism_toggle_timeline", "play"], ["", "", ""], ["Preview window", "preview", "preview"], ["Preview 1×", "preview_1", ""], ["Preview 2×", "preview_2", ""]]],
 	["Help", [["Keyboard shortcuts…", "help_shortcuts", ""], ["Edit key bindings file…", "help_keybindings", ""], ["", "", ""], ["About PRISM…", "help_about", ""]]],
 ]
@@ -245,8 +245,10 @@ func run_action(action: String) -> void:
 			_show_result(EditorContext.effects.flip_horizontal(), "")
 		"fx_flip_v":
 			_show_result(EditorContext.effects.flip_vertical(), "")
-		"fx_rotate_180":
-			_show_result(EditorContext.effects.rotate_180(), "")
+		"fx_rotate_cw":
+			_show_result(EditorContext.effects.rotate_90(true), "")
+		"fx_rotate_ccw":
+			_show_result(EditorContext.effects.rotate_90(false), "")
 		"fx_outline":
 			_show_result(EditorContext.effects.outline_with_fg(), "")
 		"fx_replace":
