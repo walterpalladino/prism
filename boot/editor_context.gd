@@ -21,8 +21,12 @@ var session: DocumentSession
 var autosave: Autosave
 var files: FileSink
 var exports: ExportActions
+var effects: CelEffects
 ## True when the previous run did not exit cleanly and left an autosave to recover.
 var recovery_available: bool = false
+var settings: Settings
+var settings_store: SettingsStore
+var keybindings: KeybindingStore
 var raster_backend: RasterBackend
 var textures: CelTextureCache
 var palette_texture: PaletteTexture
@@ -59,6 +63,10 @@ func _init() -> void:
 	recovery_available = autosave.begin_session()
 	files = DiskFileSink.new()
 	exports = ExportActions.new(bus, state, files)
+	effects = CelEffects.new(bus, state)
+	settings_store = SettingsStore.new()
+	keybindings = KeybindingStore.new()
+	apply_settings(settings_store.load_settings())
 	textures = CelTextureCache.new()
 	palette_texture = PaletteTexture.new(bus.document.palette)
 	palette_display = PaletteDisplay.new(palette_texture, cycling)
@@ -92,6 +100,33 @@ func open_document(document: PrismDocument) -> void:
 	state.frame_range = Vector2i.ZERO
 	state.set_selection(Rect2i())
 	session.start_new(document)
+
+
+## Applies preferences to the services and the InputMap (the UI applies theme and scale).
+func apply_settings(p_settings: Settings) -> void:
+	settings = p_settings
+	autosave.interval_s = maxf(1.0, settings.autosave_interval_s)
+	autosave.enabled = settings.autosave_interval_s > 0
+	state.onion_past_tint = settings.onion_past_tint
+	state.onion_future_tint = settings.onion_future_tint
+	var bindings: Dictionary[StringName, Array] = Shortcuts.preset(settings.key_preset)
+	bindings.merge(keybindings.load_overrides(), true)
+	KeybindingStore.apply(bindings)
+	state.changed.emit()
+
+
+## Saves and applies new preferences. Returns "" or an error message.
+func save_settings(p_settings: Settings) -> String:
+	p_settings.sanitize()
+	apply_settings(p_settings)
+	return settings_store.save_settings(p_settings)
+
+
+## The bindings currently in effect (preset + overrides), for the shortcuts list.
+func current_bindings() -> Dictionary[StringName, Array]:
+	var bindings: Dictionary[StringName, Array] = Shortcuts.preset(settings.key_preset)
+	bindings.merge(keybindings.load_overrides(), true)
+	return bindings
 
 
 ## Clean shutdown: waits for a running autosave and removes the crash-recovery files.

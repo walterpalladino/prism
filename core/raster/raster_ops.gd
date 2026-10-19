@@ -145,7 +145,9 @@ static func pixel_perfect(points: Array[Vector2i]) -> Array[Vector2i]:
 
 
 ## Scanline 4-way flood fill. Returns the dirty rect (empty if nothing changed).
-## Hot path: uses a preallocated seed stack and no per-run allocations (ADR 0003).
+## Hot path (ADR 0003): preallocated seed stack, no per-span allocations or helper calls.
+## Skipping the parent span (classic optimization) was measured slower here: on noisy images
+## the per-seed bookkeeping costs more than the comparisons it saves.
 static func flood_fill(image: IndexedImage, start: Vector2i, value: int, stencil: Stencil) -> Rect2i:
 	if not image.has_point(start.x, start.y):
 		return Rect2i()
@@ -182,10 +184,15 @@ static func flood_fill(image: IndexedImage, start: Vector2i, value: int, stencil
 			hi += 1
 		for i: int in range(lo, hi + 1):
 			px[i] = value
-		min_x = mini(min_x, lo - row)
-		max_x = maxi(max_x, hi - row)
-		min_y = mini(min_y, y)
-		max_y = maxi(max_y, y)
+		# Plain comparisons: mini()/maxi() calls cost more in this hot loop.
+		if lo - row < min_x:
+			min_x = lo - row
+		if hi - row > max_x:
+			max_x = hi - row
+		if y < min_y:
+			min_y = y
+		elif y > max_y:
+			max_y = y
 		# Push one seed per run of target pixels in the rows above and below.
 		# The two scans are written out twice on purpose: a helper call per run costs more.
 		if y > 0:

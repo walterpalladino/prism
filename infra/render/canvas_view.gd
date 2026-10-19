@@ -27,6 +27,7 @@ var _cache: CelTextureCache
 var _palette_texture: PaletteTexture
 
 var _viewport: SubViewport
+var _background: ColorRect
 var _world: Node2D
 var _checker: ColorRect
 var _stack: CelStack
@@ -54,11 +55,11 @@ func _init() -> void:
 	_viewport.snap_2d_transforms_to_pixel = true
 	_viewport.canvas_item_default_texture_filter = Viewport.DEFAULT_CANVAS_ITEM_TEXTURE_FILTER_NEAREST
 	add_child(_viewport)
-	var background: ColorRect = ColorRect.new()
-	background.color = WORKSPACE_COLOR
-	background.set_anchors_preset(Control.PRESET_FULL_RECT)
-	background.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_viewport.add_child(background)
+	_background = ColorRect.new()
+	_background.color = WORKSPACE_COLOR
+	_background.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_background.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_viewport.add_child(_background)
 	_world = Node2D.new()
 	_viewport.add_child(_world)
 	_checker = _shaded_rect(CHECKER_SHADER)
@@ -175,6 +176,14 @@ func _apply_transform() -> void:
 	grid_material.set_shader_parameter("tile", float(tile_grid))
 	grid_material.set_shader_parameter("pixel_grid", zoom >= GRID_MIN_ZOOM)
 	_grid.visible = show_grid and (zoom >= GRID_MIN_ZOOM or tile_grid > 0)
+
+
+## Workspace and transparency-checkerboard colors (from preferences).
+func set_colors(workspace: Color, checker_a: Color, checker_b: Color) -> void:
+	_background.color = workspace
+	var material: ShaderMaterial = _checker.material as ShaderMaterial
+	material.set_shader_parameter("color_a", checker_a)
+	material.set_shader_parameter("color_b", checker_b)
 
 
 func set_show_grid(value: bool) -> void:

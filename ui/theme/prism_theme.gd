@@ -1,36 +1,70 @@
-## PRISM dark theme (GDD §8.2): deep slate background, panel slate, Workbench blue for
-## selection/past and orange for active/future. Built in code so values stay reviewable.
+## PRISM themes (GDD §8.2). Dark (default): deep slate background, panel slate, Workbench
+## blue for selection/past and orange for active/future. Light: the same roles on pale slate.
+## Built in code so values stay reviewable. Colors are static vars so custom-drawn controls
+## pick up the active theme; call use() before building the UI.
 class_name PrismTheme
 extends RefCounted
 
-const BG: Color = Color("#1b1c23")
-const PANEL: Color = Color("#262833")
-const PANEL_2: Color = Color("#2f3240")
-const BORDER: Color = Color("#3c4052")
-const TEXT: Color = Color("#c9cbd6")
-const DIM: Color = Color("#7d8197")
-const BLUE: Color = Color("#3d7bff")
-const ORANGE: Color = Color("#ff8a3d")
-## Color-cycle brackets (concept C1/C3).
-const CYCLE: Color = Color("#3dffd0")
 const FONT_SIZE: int = 13
+const DARK: Dictionary[String, Color] = {
+	"bg": Color("#1b1c23"), "panel": Color("#262833"), "panel_2": Color("#2f3240"), "border": Color("#3c4052"),
+	"text": Color("#c9cbd6"), "dim": Color("#7d8197"), "blue": Color("#3d7bff"), "orange": Color("#ff8a3d"),
+	"cycle": Color("#3dffd0"), "workspace": Color("#15161c"),
+}
+const LIGHT: Dictionary[String, Color] = {
+	"bg": Color("#e6e7ee"), "panel": Color("#f3f3f7"), "panel_2": Color("#dcdde6"), "border": Color("#b7bacb"),
+	"text": Color("#22242d"), "dim": Color("#686c80"), "blue": Color("#2a63e0"), "orange": Color("#e2661a"),
+	"cycle": Color("#0b9c80"), "workspace": Color("#cfd1db"),
+}
+
+static var BG: Color = DARK["bg"]
+static var PANEL: Color = DARK["panel"]
+static var PANEL_2: Color = DARK["panel_2"]
+static var BORDER: Color = DARK["border"]
+static var TEXT: Color = DARK["text"]
+static var DIM: Color = DARK["dim"]
+static var BLUE: Color = DARK["blue"]
+static var ORANGE: Color = DARK["orange"]
+## Color-cycle brackets (concept C1/C3).
+static var CYCLE: Color = DARK["cycle"]
+## Area around the canvas.
+static var WORKSPACE: Color = DARK["workspace"]
+static var is_light: bool = false
 
 
-static func build_dark() -> Theme:
+## Switches the active colors ("dark" or "light").
+static func use(theme_name: String) -> void:
+	is_light = theme_name == "light"
+	var colors: Dictionary[String, Color] = LIGHT if is_light else DARK
+	BG = colors["bg"]
+	PANEL = colors["panel"]
+	PANEL_2 = colors["panel_2"]
+	BORDER = colors["border"]
+	TEXT = colors["text"]
+	DIM = colors["dim"]
+	BLUE = colors["blue"]
+	ORANGE = colors["orange"]
+	CYCLE = colors["cycle"]
+	WORKSPACE = colors["workspace"]
+
+
+## The Theme resource for the active colors.
+static func build() -> Theme:
 	var theme: Theme = Theme.new()
 	theme.default_font_size = FONT_SIZE
 	for type: String in ["Label", "Button", "CheckBox", "OptionButton", "MenuBar", "PopupMenu", "SpinBox", "LineEdit"]:
 		theme.set_color("font_color", type, TEXT)
-	theme.set_color("font_hover_color", "Button", Color.WHITE)
-	theme.set_color("font_pressed_color", "Button", BG)
-	theme.set_color("font_hover_pressed_color", "Button", BG)
+	var strong: Color = Color.BLACK if is_light else Color.WHITE
+	theme.set_color("font_hover_color", "Button", strong)
+	theme.set_color("font_pressed_color", "Button", Color("#1b1c23"))
+	theme.set_color("font_hover_pressed_color", "Button", Color("#1b1c23"))
 	theme.set_color("font_disabled_color", "PopupMenu", DIM)
 	# Icons are white SVGs; buttons tint them per state.
 	theme.set_color("icon_normal_color", "Button", TEXT)
-	theme.set_color("icon_hover_color", "Button", Color.WHITE)
+	theme.set_color("icon_hover_color", "Button", strong)
 	theme.set_color("icon_focus_color", "Button", TEXT)
-	theme.set_color("icon_pressed_color", "Button", BG)
-	theme.set_color("icon_hover_pressed_color", "Button", BG)
+	theme.set_color("icon_pressed_color", "Button", Color("#1b1c23"))
+	theme.set_color("icon_hover_pressed_color", "Button", Color("#1b1c23"))
 	theme.set_color("icon_disabled_color", "Button", DIM)
 	theme.set_stylebox("panel", "PanelContainer", _box(PANEL, BORDER, 0))
 	theme.set_stylebox("panel", "Panel", _box(PANEL, BORDER, 0))
@@ -52,17 +86,26 @@ static func build_dark() -> Theme:
 	theme.set_stylebox("normal", "Button", _box(PANEL_2, BORDER, 1, 3))
 	theme.set_stylebox("hover", "Button", _box(BORDER, BLUE, 1, 3))
 	theme.set_stylebox("pressed", "Button", _box(ORANGE, ORANGE, 1, 3))
-	theme.set_stylebox("hover_pressed", "Button", _box(ORANGE, Color.WHITE, 1, 3))
+	theme.set_stylebox("hover_pressed", "Button", _box(ORANGE, strong, 1, 3))
 	theme.set_stylebox("focus", "Button", StyleBoxEmpty.new())
 	theme.set_stylebox("normal", "OptionButton", _box(PANEL_2, BORDER, 1, 3))
 	theme.set_stylebox("hover", "OptionButton", _box(BORDER, BLUE, 1, 3))
 	theme.set_stylebox("pressed", "OptionButton", _box(PANEL_2, BLUE, 1, 3))
 	theme.set_stylebox("normal", "LineEdit", _box(BG, BORDER, 1, 3))
+	# Menu bar: flat items that highlight on hover/open.
+	theme.set_stylebox("normal", "MenuBar", StyleBoxEmpty.new())
+	theme.set_stylebox("hover", "MenuBar", _box(PANEL_2, PANEL_2, 0, 3))
+	theme.set_stylebox("pressed", "MenuBar", _box(BLUE, BLUE, 0, 3))
+	theme.set_stylebox("hover_pressed", "MenuBar", _box(BLUE, BLUE, 0, 3))
+	theme.set_stylebox("disabled", "MenuBar", StyleBoxEmpty.new())
+	theme.set_color("font_hover_color", "MenuBar", strong)
+	theme.set_color("font_pressed_color", "MenuBar", Color.WHITE)
+	theme.set_color("font_hover_pressed_color", "MenuBar", Color.WHITE)
 	for state_name: String in ["normal", "pressed", "hover_pressed", "focus"]:
 		theme.set_stylebox(state_name, "CheckBox", StyleBoxEmpty.new())
 	theme.set_stylebox("hover", "CheckBox", _box(PANEL_2, PANEL_2, 0, 3))
 	theme.set_color("font_pressed_color", "CheckBox", TEXT)
-	theme.set_color("font_hover_pressed_color", "CheckBox", Color.WHITE)
+	theme.set_color("font_hover_pressed_color", "CheckBox", strong)
 	theme.set_stylebox("hover", "PopupMenu", _box(BLUE, BLUE, 0, 2))
 	return theme
 

@@ -13,6 +13,11 @@ extends RefCounted
 @abstract func find_upwards(directory: String, file_name: String) -> String
 
 
+## Opens a file or folder with the operating system (no-op where unsupported).
+func open_in_system(_path: String) -> void:
+	pass
+
+
 func write_text(path: String, text: String) -> String:
 	return write_bytes(path, text.to_utf8_buffer())
 

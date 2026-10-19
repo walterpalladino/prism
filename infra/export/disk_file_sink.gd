@@ -29,3 +29,7 @@ func find_upwards(directory: String, file_name: String) -> String:
 			break
 		current = parent
 	return ""
+
+
+func open_in_system(path: String) -> void:
+	var _error: int = OS.shell_open(ProjectSettings.globalize_path(path))

@@ -44,6 +44,7 @@ const DEFAULTS: Dictionary[StringName, Array] = {
 	&"prism_save_as": [[KEY_S, CTRL | SHIFT]],
 	&"prism_undo": [[KEY_Z, CTRL]],
 	&"prism_redo": [[KEY_Z, CTRL | SHIFT], [KEY_Y, CTRL]],
+	&"prism_select_all": [[KEY_A, CTRL]],
 	&"prism_copy": [[KEY_C, CTRL]],
 	&"prism_cut": [[KEY_X, CTRL]],
 	&"prism_paste": [[KEY_V, CTRL]],
@@ -61,6 +62,17 @@ const DEFAULTS: Dictionary[StringName, Array] = {
 	&"prism_nudge_right": [[KEY_RIGHT, 0]],
 	&"prism_nudge_up": [[KEY_UP, 0]],
 	&"prism_nudge_down": [[KEY_DOWN, 0]],
+}
+
+## The "classic" preset (DPaint heritage) overrides these on top of DEFAULTS. It resolves the
+## `.` conflict of GDD §8.3 the DPaint way: `.` restores the brush and frames move with 1 / 2.
+const CLASSIC: Dictionary[StringName, Array] = {
+	&"prism_brush_restore": [[KEY_PERIOD, 0], [KEY_KP_PERIOD, 0]],
+	&"prism_frame_prev": [[KEY_1, 0]],
+	&"prism_frame_next": [[KEY_2, 0]],
+	&"prism_zoom_reset": [[KEY_0, 0]],
+	&"prism_tool_line": [[KEY_V, 0]],
+	&"prism_tool_move": [[KEY_V, SHIFT]],
 }
 
 ## Actions that repeat while the key is held.
@@ -83,9 +95,54 @@ static func make_event(keycode: Key, mods: int) -> InputEventKey:
 	return event
 
 
-static func events_for(action: StringName) -> Array[InputEventKey]:
+## Every action's bindings for a preset ("modern" = DEFAULTS, "classic" = DEFAULTS + CLASSIC).
+static func preset(preset_name: String) -> Dictionary[StringName, Array]:
+	var bindings: Dictionary[StringName, Array] = DEFAULTS.duplicate()
+	if preset_name == "classic":
+		bindings.merge(CLASSIC, true)
+	return bindings
+
+
+## Human-readable binding, e.g. "Ctrl+Shift+Z" (Ctrl means Cmd on macOS).
+static func describe(binding: Array) -> String:
+	var keycode: Key = binding[0]
+	var mods: int = binding[1]
+	var parts: PackedStringArray = PackedStringArray()
+	if mods & CTRL:
+		parts.append_array(["Cmd" if OS.has_feature("macos") else "Ctrl"])
+	if mods & ALT:
+		parts.append_array(["Alt"])
+	if mods & SHIFT:
+		parts.append_array(["Shift"])
+	parts.append_array([OS.get_keycode_string(keycode)])
+	return "+".join(parts)
+
+
+## Parses "Ctrl+Shift+Z" style text into [keycode, mods]; an empty array if it is not valid.
+static func parse(text: String) -> Array:
+	var parts: PackedStringArray = text.split("+", false)
+	if parts.is_empty():
+		return []
+	var mods: int = 0
+	for i: int in parts.size() - 1:
+		match parts[i].strip_edges().to_lower():
+			"ctrl", "cmd", "command":
+				mods |= CTRL
+			"shift":
+				mods |= SHIFT
+			"alt", "option":
+				mods |= ALT
+			_:
+				return []
+	var keycode: Key = OS.find_keycode_from_string(parts[parts.size() - 1].strip_edges())
+	if keycode == KEY_NONE:
+		return []
+	return [keycode, mods]
+
+
+static func events_for(action: StringName, bindings: Dictionary[StringName, Array] = DEFAULTS) -> Array[InputEventKey]:
 	var events: Array[InputEventKey] = []
-	for binding: Array in DEFAULTS[action]:
+	for binding: Array in bindings[action]:
 		var keycode: Key = binding[0]
 		var mods: int = binding[1]
 		events.append(make_event(keycode, mods))

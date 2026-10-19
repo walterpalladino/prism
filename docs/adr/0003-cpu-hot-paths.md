@@ -1,6 +1,6 @@
 # 0003 — CPU hot paths stay in GDScript
 
-**Status:** Accepted · **Spike:** C · **Date:** 2026-10-19
+**Status:** Accepted, with one open item (see *M7 update*) · **Spike:** C · **Date:** 2026-10-19
 
 ## Context
 GDD §9.4 budgets: flood fill 512² < 50 ms; full-canvas undo < 16 ms. Spike C also times LZW-encoding
@@ -39,3 +39,24 @@ cleared with native `fill(0)` on table reset, instead of a `Dictionary`.
 - The noise-case flood fill misses 50 ms on a slower machine (it has ~0 % headroom on an M1), or
 - the canvas limit rises above 512², or
 - profiling in M7 shows `read_rect` / `write_rect` in stroke commit paths (row slicing could be optimized).
+
+## M7 update — §9.4 budget review (`bench/budgets_bench.gd`)
+
+| Budget | Measured | Result |
+|---|---|---|
+| Stroke < 8 ms (16 px drag, 8 px brush, 512², incl. texture upload) | 0.5 ms | ✅ |
+| Full-canvas undo < 16 ms (512², incl. texture upload) | 8.0–8.4 ms | ✅ |
+| Playback 60 fps (256² × 4 layers × 8 frames, onion 3/2 on) | 205–715 fps | ✅ |
+| Flood fill 512² < 50 ms, worst case (30 % noise walls) | **50.2–53.3 ms** | ❌ by ≤ 7 % |
+| Flood fill 512², whole blank canvas | 34 ms | ✅ |
+
+Tried for the worst case and **rejected** (measured slower on noisy images, where ~100k tiny spans make
+per-span overhead dominate):
+- Skipping the parent span when scanning back (classic scanline optimization): 59–82 ms. It does help
+  large open areas (blank 512²: 34 → 27 ms) but not the budget case.
+- Replacing `mini()`/`maxi()` with plain comparisons: kept (cheaper), no measurable change.
+
+**Open decision:** the worst case misses the budget by a few percent; real fills (sprite regions, open
+areas) are well inside it. Options: accept for the prototype, or move `RasterBackend.flood_fill` to a
+GDExtension (C++) implementation, which is the escape hatch this ADR planned. Listed in the
+post-prototype backlog.

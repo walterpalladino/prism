@@ -141,3 +141,18 @@ func test_palette_display_shows_cycled_colors() -> void:
 	texture.update_colors(PackedColorArray([Color.RED]))
 	assert_bool(texture.get_color(0).is_equal_approx(Color.RED)).is_true()
 	assert_float(texture.get_color(1).a).is_equal(0.0)
+
+
+func test_canvas_colors_and_theme_switch() -> void:
+	var fx: AppFixture = AppFixture.new(8, 8)
+	var view: CanvasView = auto_free(CanvasView.new())
+	add_child(view)
+	view.setup(fx.bus, fx.state, fx.controller, CelTextureCache.new(), PaletteTexture.new(fx.bus.document.palette))
+	view.set_colors(Color.RED, Color.GREEN, Color.BLUE)
+	remove_child(view)
+	PrismTheme.use("light")
+	assert_bool(PrismTheme.is_light).is_true()
+	assert_that(PrismTheme.BG).is_equal(PrismTheme.LIGHT["bg"])
+	assert_object(PrismTheme.build()).is_not_null()
+	PrismTheme.use("dark")
+	assert_that(PrismTheme.BG).is_equal(PrismTheme.DARK["bg"])

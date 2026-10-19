@@ -13,11 +13,14 @@ var _texture: PaletteTexture
 
 func before() -> void:
 	# gdUnit4's runner minimizes its window between suites; minimized windows are not drawn.
+	# macOS also stops drawing a window that other windows fully cover, so bring it to the front.
 	if DisplayServer.get_name() != "headless":
 		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED)
+		DisplayServer.window_move_to_foreground()
 
 
 func before_test() -> void:
+	before()
 	_fx = AppFixture.new(16, 16)
 	_texture = PaletteTexture.new(_fx.bus.document.palette)
 	var _display: PaletteDisplay = PaletteDisplay.new(_texture, _fx.cycling)
@@ -41,7 +44,7 @@ func _render() -> Image:
 	# Read back only after frames have actually been drawn. macOS may stop drawing an occluded
 	# window, so wait with a time limit instead of awaiting frame_post_draw forever.
 	var target: int = Engine.get_frames_drawn() + 3
-	var deadline: int = Time.get_ticks_msec() + 3000
+	var deadline: int = Time.get_ticks_msec() + 6000
 	while Engine.get_frames_drawn() < target and Time.get_ticks_msec() < deadline:
 		await get_tree().process_frame
 	if Engine.get_frames_drawn() < target:
@@ -51,7 +54,7 @@ func _render() -> Image:
 
 
 func _check(name: String, image: Image) -> void:
-	assert_object(image).override_failure_message("renderer did not draw within 3 s (is the test window hidden or occluded?)").is_not_null()
+	assert_object(image).override_failure_message("renderer did not draw within 6 s (is the test window hidden or occluded?)").is_not_null()
 	if image == null:
 		return
 	# A blank capture would otherwise "match" a golden regenerated from it.

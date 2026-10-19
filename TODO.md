@@ -261,20 +261,20 @@ Also delivered early: a minimal palette swatch grid (LMB = FG, RMB = BG) so M2 i
 ## M7 — Polish & playtest (2 weeks)
 
 ### Preferences (§7.13)
-- [ ] `ConfigFile` at `user://settings.cfg`: theme (dark/light), checkerboard colors, onion tints, autosave interval, UI scale
-- [ ] Light theme `prism_light.tres`
-- [ ] Key binding overrides in `user://keybindings.json`, applied at startup
-- [ ] Consider "Classic" vs "Modern" key presets (Risk 3)
+- [x] `ConfigFile` at `user://settings.cfg`: theme (dark/light), checkerboard colors, onion tints, autosave interval (0 = off), UI scale, key preset — Project → Preferences…
+- [x] Light theme (built in code by `PrismTheme`, like the dark one; switching rebuilds the window, the document stays)
+- [x] Key binding overrides in `user://keybindings.json` (`"action": ["Shift+V", …]`), applied at startup; Help → Edit key bindings file… writes a template
+- [x] "Classic" (DPaint: 1/2 frames, `.` restore brush, V line) vs "Modern" key presets (Risk 3); default to be decided by the playtest
 
 ### Polish
-- [ ] Menu bar fully wired: Project, Edit, Picture, Brush, Mode, Anim, Effect, View
-- [ ] Keyboard map review (resolve `.` conflict, §8.3 note)
-- [ ] Tooltips with shortcuts, empty states, error dialogs
-- [ ] Performance benchmarks vs §9.4 budgets: stroke < 8 ms @ 512², playback 60 fps @ 256² × 4 layers + onion, full-canvas undo < 16 ms, flood fill 512² < 50 ms
-- [ ] 2-hour soak test: random commands + autosave + reload, no data loss
+- [x] Menu bar fully wired: Project, Edit, Picture, Brush, Mode, Anim, Effect (flip/rotate cel, outline, replace color), View + Help (shortcuts list, key bindings file, About/credits); menu items show their shortcuts
+- [x] Keyboard map review: `.` conflict resolved per preset (Modern: `.` next frame, Shift+B restore brush; Classic: `.` restore brush, 1/2 frames); a test checks no preset binds one key twice
+- [x] Tooltips with shortcuts (toolbox, timeline, panels), empty states (no cycles / ramps / locks, onion with no neighbors), error dialogs for every file and export failure
+- [x] Performance benchmarks vs §9.4 budgets (`bench/budgets_bench.gd`): stroke 0.5 ms, undo 8 ms, playback ≥ 205 fps ✅; worst-case flood fill 50–53 ms ❌ by ≤ 7 % — open decision in [ADR 0003](docs/adr/0003-cpu-hot-paths.md)
+- [x] 2-hour soak test (`bench/soak.gd`, `PRISM_SOAK_MINUTES`): random commands + background autosave + save/reload + undo/redo-all, with a fingerprint diff on failure. Found and fixed: palette colors are now stored as exact 8-bit RGB (were losing precision on save)
 
 ### Playtest
-- [ ] Sessions with 3–5 artists (DPaint veteran, Aseprite user, game dev) running the §13 task script
+- [ ] Sessions with 3–5 artists (DPaint veteran, Aseprite user, game dev) running the §13 task script — kit ready: [docs/playtest/PLAYTEST.md](docs/playtest/PLAYTEST.md)
 - [ ] Collect "feels like DPaint" / "feels like a modern sprite tool" ratings (target ≥ 4/5)
 - [ ] Triage findings into the P1 backlog
 
@@ -284,6 +284,7 @@ Also delivered early: a minimal palette swatch grid (LMB = FG, RMB = BG) so M2 i
 
 ## Post-prototype backlog (ordered, §10)
 
+0. [ ] Decide flood fill worst case: accept, or GDExtension `RasterBackend` (ADR 0003 M7 update)
 1. [ ] Anim-brushes — multi-frame brush advancing per stamp (P1, §7.10)
 2. [ ] Lasso / polygon selection & pickup (P1)
 3. [ ] Symmetry (H/V) & tiled-wrap mode (P1)

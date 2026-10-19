@@ -79,3 +79,9 @@ func test_disk_file_sink() -> void:
 	DirAccess.remove_absolute(dir.path_join("a"))
 	DirAccess.remove_absolute(dir.path_join("project.godot"))
 	DirAccess.remove_absolute(dir)
+
+
+func test_memory_sink_open_in_system_is_a_no_op() -> void:
+	var sink: MemoryFileSink = MemoryFileSink.new()
+	sink.open_in_system("/anything")
+	assert_bool(sink.files.is_empty()).is_true()

@@ -58,8 +58,9 @@ func has_pending_edit() -> bool:
 
 func set_color(index: int, color: Color) -> void:
 	commit_color()
-	if palette().get_color(index) != color:
-		bus.execute(SetPaletteColorCommand.new(index, palette().get_color(index), color))
+	var quantized: Color = Palette.quantize(color)
+	if palette().get_color(index) != quantized:
+		bus.execute(SetPaletteColorCommand.new(index, palette().get_color(index), quantized))
 
 
 ## Moves entry `from` to `to`. With remap the picture is unchanged and FG/BG follow their colors.

@@ -7,14 +7,15 @@ const NEW_SIZES: Array[Vector2i] = [Vector2i(16, 16), Vector2i(32, 32), Vector2i
 
 ## Menu name -> list of [label, action, icon] ("" action = separator, "-" = disabled placeholder).
 const MENUS: Array[Array] = [
-	["Project", [["New 16×16", "new_16", "new"], ["New 32×32", "new_32", "new"], ["New 64×64", "new_64", "new"], ["New 128×128", "new_128", "new"], ["New 256×256", "new_256", "new"], ["", "", ""], ["Open…", "prism_open", "folder"], ["Save", "prism_save", "save"], ["Save as…", "prism_save_as", "save"], ["", "", ""], ["Import PNG into cel…", "import_png", "preview"], ["New from PNG…", "new_from_png", "preview"], ["", "", ""], ["Export PNG (current frame)…", "export_png", ""], ["Export PNG sequence…", "export_sequence", ""], ["Export sprite sheet + JSON…", "export_sheet", ""], ["Export Godot SpriteFrames…", "export_sprite_frames", ""], ["Export GIF…", "export_gif", ""], ["", "", ""], ["Open demo: Waterfall (color cycling)", "demo_waterfall", "play"], ["", "", ""], ["Load palette…", "palette_load", "folder"], ["Save palette…", "palette_save", "save"], ["", "", ""], ["Quit", "quit", "close"]]],
-	["Edit", [["Undo", "prism_undo", "undo"], ["Redo", "prism_redo", "redo"], ["", "", ""], ["Cut", "prism_cut", "cut"], ["Copy", "prism_copy", "copy"], ["Paste", "prism_paste", "paste"], ["", "", ""], ["Deselect", "deselect", "close"]]],
-	["Picture", [["Palette: PRISM 32", "preset_default", ""], ["Palette: PICO-8 style 16", "preset_pico8", ""], ["Palette: EGA 16", "preset_ega", ""], ["Palette: Grayscale 16", "preset_gray", ""], ["", "", ""], ["Invert stencil", "stencil_invert", "lock"], ["Lock all except FG", "stencil_all_but_fg", "lock"], ["Clear stencil", "stencil_clear", "unlock"]]],
+	["Project", [["New 16×16", "new_16", "new"], ["New 32×32", "new_32", "new"], ["New 64×64", "new_64", "new"], ["New 128×128", "new_128", "new"], ["New 256×256", "new_256", "new"], ["", "", ""], ["Open…", "prism_open", "folder"], ["Save", "prism_save", "save"], ["Save as…", "prism_save_as", "save"], ["", "", ""], ["Import PNG into cel…", "import_png", "preview"], ["New from PNG…", "new_from_png", "preview"], ["", "", ""], ["Export PNG (current frame)…", "export_png", ""], ["Export PNG sequence…", "export_sequence", ""], ["Export sprite sheet + JSON…", "export_sheet", ""], ["Export Godot SpriteFrames…", "export_sprite_frames", ""], ["Export GIF…", "export_gif", ""], ["", "", ""], ["Open demo: Waterfall (color cycling)", "demo_waterfall", "play"], ["", "", ""], ["Load palette…", "palette_load", "folder"], ["Save palette…", "palette_save", "save"], ["", "", ""], ["Preferences…", "preferences", ""], ["", "", ""], ["Quit", "quit", "close"]]],
+	["Edit", [["Undo", "prism_undo", "undo"], ["Redo", "prism_redo", "redo"], ["", "", ""], ["Cut", "prism_cut", "cut"], ["Copy", "prism_copy", "copy"], ["Paste", "prism_paste", "paste"], ["", "", ""], ["Select all", "prism_select_all", "select"], ["Deselect", "deselect", "close"]]],
+	["Picture", [["Palette: PRISM 32", "preset_default", ""], ["Palette: PICO-8 style 16", "preset_pico8", ""], ["Palette: EGA 16", "preset_ega", ""], ["Palette: Grayscale 16", "preset_gray", ""], ["", "", ""], ["Invert stencil", "stencil_invert", "lock"], ["Lock all except FG", "stencil_all_but_fg", "lock"], ["Clear stencil", "stencil_clear", "unlock"], ["", "", ""], ["Clear cel", "cel_clear", "trash"]]],
 	["Brush", [["Restore built-in", "prism_brush_restore", "brush"], ["Flip horizontal", "prism_brush_flip_h", "flip_h"], ["Flip vertical", "prism_brush_flip_v", "flip_v"], ["Rotate 90°", "prism_brush_rotate", "rotate"]]],
 	["Mode", [["Color", "mode_color", ""], ["Replace", "mode_replace", ""], ["Shade", "mode_shade", ""]]],
 	["Anim", [["Play / stop", "prism_play", "play"], ["Previous frame", "prism_frame_prev", "prev"], ["Next frame", "prism_frame_next", "next"], ["", "", ""], ["New frame", "prism_frame_new", "plus"], ["Duplicate frame", "prism_frame_duplicate", "duplicate"], ["Duplicate frame (linked)", "frame_duplicate_linked", "duplicate"], ["Delete frame", "frame_delete", "trash"], ["", "", ""], ["New layer", "layer_new", "plus"], ["Duplicate layer", "layer_duplicate", "duplicate"], ["Delete layer", "layer_delete", "trash"], ["", "", ""], ["New tag from selection", "tag_new", ""], ["", "", ""], ["Onion skin", "prism_toggle_onion", "eye"], ["Color cycling preview", "prism_toggle_cycling", "play"]]],
-	["Effect", [["Coming later", "-", ""]]],
+	["Effect", [["Flip cel horizontally", "fx_flip_h", "flip_h"], ["Flip cel vertically", "fx_flip_v", "flip_v"], ["Rotate cel 180°", "fx_rotate_180", "rotate"], ["", "", ""], ["Outline with FG", "fx_outline", ""], ["Replace FG with BG", "fx_replace", ""]]],
 	["View", [["Zoom in", "prism_zoom_in", "zoom_in"], ["Zoom out", "prism_zoom_out", "zoom_out"], ["Zoom 1:1", "prism_zoom_reset", ""], ["Fit", "fit", ""], ["", "", ""], ["Pixel grid", "prism_toggle_grid", "grid"], ["Tile grid: off / 8 / 16 / 32", "tile_grid", "grid"], ["Timeline", "prism_toggle_timeline", "play"], ["", "", ""], ["Preview window", "preview", "preview"], ["Preview 1×", "preview_1", ""], ["Preview 2×", "preview_2", ""]]],
+	["Help", [["Keyboard shortcuts…", "help_shortcuts", ""], ["Edit key bindings file…", "help_keybindings", ""], ["", "", ""], ["About PRISM…", "help_about", ""]]],
 ]
 
 var canvas: CanvasView
@@ -35,7 +36,10 @@ const LAYOUTS: PackedStringArray = ["Row", "Column", "Grid", "Tight (trimmed)"]
 
 
 func _ready() -> void:
-	theme = PrismTheme.build_dark()
+	var settings: Settings = EditorContext.settings
+	PrismTheme.use(settings.theme)
+	theme = PrismTheme.build()
+	get_window().content_scale_factor = settings.ui_scale
 	get_tree().set_auto_accept_quit(false)
 	var background: ColorRect = ColorRect.new()
 	background.color = PrismTheme.BG
@@ -70,6 +74,7 @@ func _ready() -> void:
 	root.add_child(timeline)
 
 	canvas.setup(EditorContext.bus, EditorContext.state, EditorContext.tools, EditorContext.textures, EditorContext.palette_texture)
+	canvas.set_colors(PrismTheme.WORKSPACE, settings.checker_a, settings.checker_b)
 	status_bar = StatusBar.new()
 	status_bar.name = "StatusBar"
 	status_bar.setup(EditorContext.state, EditorContext.tools, canvas)
@@ -86,6 +91,7 @@ func _ready() -> void:
 	Signals.on(EditorContext.session.changed, _update_title)
 	_update_title()
 	if EditorContext.recovery_available:
+		EditorContext.recovery_available = false
 		_offer_recovery.call_deferred()
 
 
@@ -231,6 +237,28 @@ func run_action(action: String) -> void:
 				ctx.call(&"open_document", DemoDocuments.waterfall())
 				EditorContext.cycling.request(&"tab", true)
 				canvas.fit())
+		"prism_select_all":
+			EditorContext.effects.select_all()
+		"cel_clear":
+			var _cleared: bool = EditorContext.timeline.clear_cel(state.layer_index, state.frame_index)
+		"fx_flip_h":
+			_show_result(EditorContext.effects.flip_horizontal(), "")
+		"fx_flip_v":
+			_show_result(EditorContext.effects.flip_vertical(), "")
+		"fx_rotate_180":
+			_show_result(EditorContext.effects.rotate_180(), "")
+		"fx_outline":
+			_show_result(EditorContext.effects.outline_with_fg(), "")
+		"fx_replace":
+			_show_result(EditorContext.effects.replace_fg_with_bg(), "")
+		"preferences":
+			_open_preferences()
+		"help_shortcuts":
+			_show_shortcuts()
+		"help_keybindings":
+			_open_keybindings_file()
+		"help_about":
+			_show_about()
 		"prism_toggle_stencil":
 			side_panel.toggle_stencil_section()
 		"stencil_invert":
@@ -459,6 +487,115 @@ func _options(values: Dictionary) -> ExportOptions:
 	return options
 
 
+# --- preferences & help --------------------------------------------------------
+
+const THEME_NAMES: PackedStringArray = ["Dark", "Light"]
+const PRESET_NAMES: PackedStringArray = ["Modern (. = next frame)", "Classic DPaint (1/2 frames, . = restore brush)"]
+
+
+func _open_preferences() -> void:
+	var current: Settings = EditorContext.settings
+	var form: FormDialog = FormDialog.new()
+	form.title = "Preferences"
+	form.add_choice("theme", "Theme", THEME_NAMES, Settings.THEMES.find(current.theme))
+	form.add_number("ui_scale", "UI scale", roundi(current.ui_scale * 100.0), roundi(Settings.MIN_UI_SCALE * 100.0), roundi(Settings.MAX_UI_SCALE * 100.0), "%")
+	form.add_number("autosave", "Autosave every", current.autosave_interval_s, 0, 3600, " s (0 = off)")
+	form.add_choice("keys", "Key preset", PRESET_NAMES, Settings.KEY_PRESETS.find(current.key_preset))
+	form.add_color("checker_a", "Checker 1", current.checker_a)
+	form.add_color("checker_b", "Checker 2", current.checker_b)
+	form.add_color("onion_past", "Onion past", current.onion_past_tint)
+	form.add_color("onion_future", "Onion future", current.onion_future_tint)
+	Signals.on(form.submitted, func(values: Dictionary) -> void:
+		var updated: Settings = current.duplicate_settings()
+		var theme_index: int = values["theme"]
+		var preset_index: int = values["keys"]
+		var scale_percent: int = values["ui_scale"]
+		var autosave_s: int = values["autosave"]
+		updated.theme = Settings.THEMES[theme_index]
+		updated.key_preset = Settings.KEY_PRESETS[preset_index]
+		updated.ui_scale = scale_percent / 100.0
+		updated.autosave_interval_s = autosave_s
+		updated.checker_a = values["checker_a"]
+		updated.checker_b = values["checker_b"]
+		updated.onion_past_tint = values["onion_past"]
+		updated.onion_future_tint = values["onion_future"]
+		var rebuild: bool = updated.theme != current.theme or updated.key_preset != current.key_preset
+		_show_result(EditorContext.save_settings(updated), "")
+		get_window().content_scale_factor = updated.ui_scale
+		canvas.set_colors(PrismTheme.WORKSPACE, updated.checker_a, updated.checker_b)
+		if rebuild:
+			# Rebuild the window so every control picks up the new theme / menu shortcuts.
+			# The document lives in EditorContext and is untouched.
+			get_tree().reload_current_scene.call_deferred())
+	form.open(self)
+
+
+## Readable name for an action ("prism_tool_rect_filled" -> "Tool rect filled").
+static func action_label(action: StringName) -> String:
+	return String(action).trim_prefix("prism_").replace("_", " ").capitalize()
+
+
+func _show_shortcuts() -> void:
+	var dialog: AcceptDialog = AcceptDialog.new()
+	dialog.title = "Keyboard shortcuts (%s)" % EditorContext.settings.key_preset
+	var scroll: ScrollContainer = ScrollContainer.new()
+	scroll.custom_minimum_size = Vector2(420, 420)
+	var grid: GridContainer = GridContainer.new()
+	grid.columns = 2
+	grid.add_theme_constant_override("h_separation", 24)
+	scroll.add_child(grid)
+	var bindings: Dictionary[StringName, Array] = EditorContext.current_bindings()
+	var actions: Array[StringName] = bindings.keys()
+	actions.sort_custom(func(a: StringName, b: StringName) -> bool: return action_label(a) < action_label(b))
+	for action: StringName in actions:
+		var name_label: Label = Label.new()
+		name_label.text = action_label(action)
+		grid.add_child(name_label)
+		var keys: PackedStringArray = PackedStringArray()
+		for binding: Array in bindings[action]:
+			keys.append_array([Shortcuts.describe(binding)])
+		var key_label: Label = Label.new()
+		key_label.text = ",  ".join(keys)
+		key_label.add_theme_color_override("font_color", PrismTheme.ORANGE)
+		grid.add_child(key_label)
+	dialog.add_child(scroll)
+	add_child(dialog)
+	Signals.on(dialog.confirmed, dialog.queue_free)
+	Signals.on(dialog.canceled, dialog.queue_free)
+	dialog.popup_centered()
+
+
+func _open_keybindings_file() -> void:
+	var store: KeybindingStore = EditorContext.keybindings
+	if not FileAccess.file_exists(store.path):
+		var error: String = store.save_bindings(EditorContext.current_bindings())
+		if error != "":
+			show_message(error)
+			return
+	EditorContext.files.open_in_system(store.path)
+	show_message("Edit the key list in keybindings.json, then restart PRISM.\nExample: \"prism_tool_line\": [\"L\", \"Shift+V\"]\n\n%s" % ProjectSettings.globalize_path(store.path))
+
+
+func _show_about() -> void:
+	var credits: String = FileAccess.get_file_as_string("res://CREDITS.md") if FileAccess.file_exists("res://CREDITS.md") else ""
+	var dialog: AcceptDialog = AcceptDialog.new()
+	dialog.title = "About PRISM"
+	var box: VBoxContainer = VBoxContainer.new()
+	var heading: Label = Label.new()
+	heading.text = "PRISM %s — palette-first pixel painter with a modern animation timeline.\nDPaint's hands, Aseprite's timeline. Built with Godot %s." % [ProjectSettings.get_setting("application/config/version", ""), Engine.get_version_info()["string"]]
+	box.add_child(heading)
+	var text: TextEdit = TextEdit.new()
+	text.text = credits
+	text.editable = false
+	text.custom_minimum_size = Vector2(560, 320)
+	box.add_child(text)
+	dialog.add_child(box)
+	add_child(dialog)
+	Signals.on(dialog.confirmed, dialog.queue_free)
+	Signals.on(dialog.canceled, dialog.queue_free)
+	dialog.popup_centered()
+
+
 func _load_preset(palette: Palette, preset_name: String) -> void:
 	var padded: int = EditorContext.palette.load_palette(palette, "Palette: " + preset_name)
 	if padded > 0:
@@ -522,6 +659,11 @@ func _build_menu_bar() -> MenuBar:
 				popup.add_item(label)
 				if action == "-":
 					popup.set_item_disabled(popup.item_count - 1, true)
+			# Show the key next to the item (handled by _unhandled_key_input, not the menu).
+			if InputMap.has_action(StringName(action)):
+				var shortcut: Shortcut = Shortcut.new()
+				shortcut.events = InputMap.action_get_events(StringName(action))
+				popup.set_item_shortcut(popup.item_count - 1, shortcut, false)
 			actions.append_array([action])
 		_menu_actions[menu_name] = actions
 		Signals.on(popup.index_pressed, func(index: int) -> void: run_action(_menu_actions[menu_name][index]))

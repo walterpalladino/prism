@@ -9,9 +9,17 @@ var colors: PackedColorArray
 var ramps: Array[Vector2i] = []
 
 
+## Palette entries are opaque 8-bit RGB: exactly what files store (#rrggbb), so a document in
+## memory always equals its saved form. Transparency comes from the transparent index.
+static func quantize(color: Color) -> Color:
+	return Color8(color.r8, color.g8, color.b8)
+
+
 func _init(p_colors: PackedColorArray = PackedColorArray()) -> void:
 	assert(p_colors.size() <= MAX_COLORS)
 	colors = p_colors.duplicate()
+	for i: int in colors.size():
+		colors[i] = quantize(colors[i])
 
 
 func size() -> int:
@@ -23,7 +31,7 @@ func get_color(index: int) -> Color:
 
 
 func set_color(index: int, color: Color) -> void:
-	colors[index] = color
+	colors[index] = quantize(color)
 
 
 func has_index(index: int) -> bool:

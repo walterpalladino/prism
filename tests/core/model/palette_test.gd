@@ -71,3 +71,11 @@ func test_presets() -> void:
 	assert_that(gray.get_color(0)).is_equal(Color.BLACK)
 	assert_that(gray.get_color(7)).is_equal(Color.WHITE)
 	assert_that(gray.find_ramp(3)).is_equal(Vector2i(0, 7))
+
+
+func test_colors_are_stored_as_opaque_8_bit() -> void:
+	var palette: Palette = Palette.new(PackedColorArray([Color(0.3172, 0.5, 1.0, 0.4)]))
+	assert_that(palette.get_color(0)).is_equal(Color8(81, 128, 255))
+	palette.set_color(0, Color(0.001, 0.999, 0.5))
+	assert_that(palette.get_color(0)).is_equal(Color8(0, 255, 128))
+	assert_float(palette.get_color(0).a).is_equal(1.0)
