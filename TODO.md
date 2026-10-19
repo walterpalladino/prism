@@ -20,7 +20,7 @@ Section references like `§7.2` point to the GDD. Milestones follow the roadmap 
 ## M0 — Setup & technical spikes (1 week)
 
 ### Project setup
-- [x] Pin Godot **4.7.2**; recorded in `README.md` and `CLAUDE.md` (CI config pending)
+- [x] Pin Godot **4.7.2**; recorded in `README.md` and `CLAUDE.md`
 - [x] Switch renderer from Forward+ to **Compatibility** in `project.godot` (§9.4)
 - [x] Remove the 3D physics engine setting (Jolt) — not needed for a 2D editor
 - [x] Set GDScript warnings to **Error**: `untyped_declaration`, `inferred_declaration`, `unsafe_property_access`, `unsafe_method_access`, `unsafe_cast`, `unsafe_call_argument`, `return_value_discarded` (names verified against 4.7.2)
@@ -32,10 +32,8 @@ Section references like `§7.2` point to the GDD. Milestones follow the roadmap 
 - [x] Update `.gitignore` (export builds, `reports/`, `.vscode/`); `*.import` files are committed as Godot recommends
 - [x] Write `CLAUDE.md` with architecture rules (§9.2), typing rule (§6.2) and file-loading security rule (§9.6)
 
-### CI
-- [ ] CI job: download pinned Godot 4.7.x, run gdUnit4 suites with `godot --headless` on every push
-- [ ] CI job: render tests on Linux with a virtual display (`--rendering-driver opengl3`) (§11)
-- [ ] Nightly export builds: Windows x86_64, macOS universal, Linux x86_64; create `export_presets.cfg`
+### Export presets
+- [ ] Create `export_presets.cfg`: Windows x86_64, macOS universal, Linux x86_64 (local builds; CI is deferred, see *Future: GitHub CI*)
 
 ### Spikes (each ends with an ADR in `docs/adr/`)
 - [ ] **Spike A — display:** R8 index texture + palette LUT shader, 4 layers, zoom/pan; measure `ImageTexture.update()` at 256², 512², 1024²; decide tile size (default 64×64)
@@ -44,7 +42,7 @@ Section references like `§7.2` point to the GDD. Milestones follow the roadmap 
 - [ ] **Spike D — coverage:** evaluate a GDScript coverage tool for 4.7; otherwise define a per-module test checklist
 - [ ] Validate Compatibility vs Forward+ renderer (Q3)
 
-**Exit:** all four spikes recorded as ADRs with go/no-go decisions; CI green on an empty test suite.
+**Exit:** all four spikes recorded as ADRs with go/no-go decisions; test suite runs green locally.
 
 ---
 
@@ -294,6 +292,17 @@ Section references like `§7.2` point to the GDD. Milestones follow the roadmap 
 11. [ ] Web export build
 
 Also P1/P2: pen pressure, palette extraction/quantize from PNG, reference layer, layer groups, movable docks, "Workbench" skin, IFF ANIM export, `.aseprite` import (Q2), macOS signing + notarization.
+
+---
+
+## Future: GitHub CI (deferred)
+
+Not part of the prototype milestones; set up once the repository is on GitHub. Until then, run tests locally (see `README.md`).
+
+- [ ] GitHub Actions: download pinned Godot 4.7.2, run gdUnit4 suites headless on every push
+- [ ] GitHub Actions: render tests on Linux with a virtual display (`--rendering-driver opengl3`) (§11)
+- [ ] Nightly export builds for the three desktop presets
+- [ ] Log performance benchmarks per run
 
 ---
 
