@@ -32,6 +32,7 @@ var _checker: ColorRect
 var _stack: CelStack
 var _grid: ColorRect
 var _overlay: SelectionOverlay
+var _flash: StencilFlash
 var _ghost: Sprite2D
 var _hover: Vector2i = Vector2i(-1, -1)
 var _hovering: bool = false
@@ -61,6 +62,8 @@ func _init() -> void:
 	_world.add_child(_stack)
 	_grid = _shaded_rect(GRID_SHADER)
 	_world.add_child(_grid)
+	_flash = StencilFlash.new()
+	_world.add_child(_flash)
 	_overlay = SelectionOverlay.new()
 	_world.add_child(_overlay)
 	_ghost = Sprite2D.new()
@@ -81,6 +84,8 @@ func setup(bus: CommandBus, state: EditorState, tools: ToolController, cache: Ce
 	Signals.on(_bus.image_changed, _on_image_changed)
 	Signals.on(_bus.document_changed, _on_document_changed)
 	Signals.on(_bus.document_replaced, _on_document_replaced)
+	Signals.on(_bus.palette_changed, _on_palette_changed)
+	Signals.on(_bus.stencil_blocked, _on_stencil_blocked)
 	Signals.on(_state.changed, _on_state_changed)
 	Signals.on(_tools.tool_changed, func(_id: StringName) -> void: _rebuild_ghost())
 	_on_document_replaced()
@@ -273,8 +278,37 @@ func _on_image_changed(image_id: StringName, _dirty: Rect2i) -> void:
 	_cache.mark_dirty(image_id)
 
 
-func _on_document_changed(_dirty: Rect2i) -> void:
+func _on_document_changed(dirty: Rect2i) -> void:
+	if not dirty.has_area():
+		_cache.mark_all_dirty()
 	_stack.rebuild(_bus.document, _state.frame_index)
+
+
+func _on_palette_changed() -> void:
+	_palette_texture.update(_bus.document.palette)
+	_rebuild_ghost()
+
+
+func _on_stencil_blocked(image_id: StringName, offsets: PackedInt32Array) -> void:
+	if not _state.flash_stencil:
+		return
+	var cel: Cel = _state.current_cel()
+	if cel == null or cel.image_id != image_id:
+		return
+	var image: IndexedImage = _bus.document.images[image_id]
+	var pixels: PackedVector2Array = PackedVector2Array()
+	var resize_error: int = pixels.resize(offsets.size())
+	assert(resize_error == OK)
+	for i: int in offsets.size():
+		var offset: int = offsets[i]
+		var y: int = floori(offset / float(image.width))
+		pixels[i] = Vector2(offset - y * image.width, y) + Vector2(cel.offset)
+	_flash.flash(pixels)
+
+
+## True while a stencil flash is fading (for tests).
+func is_flashing() -> bool:
+	return _flash.is_flashing()
 
 
 func _on_document_replaced() -> void:

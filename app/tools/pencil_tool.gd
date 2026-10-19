@@ -10,6 +10,8 @@ var _painter: Painter
 var _last: Vector2i
 ## The last two kept points, for pixel-perfect corner removal.
 var _recent: Array[Vector2i] = []
+## How many of the painter's blocked pixels were already reported.
+var _blocked_sent: int = 0
 
 
 func _init(p_bus: CommandBus, p_state: EditorState, p_erase: bool = false) -> void:
@@ -39,6 +41,7 @@ func begin(pos: Vector2i, button: PrismEnums.PaintButton, _mods: int) -> void:
 		ink = ColorInk.new()
 	_painter = Painter.new(image, state.brush, ink, ctx, doc.stencil)
 	_recent.clear()
+	_blocked_sent = 0
 	_last = state.to_image_space(pos)
 	_plot(_last)
 	_publish()
@@ -98,3 +101,6 @@ func _uses_pixel_perfect() -> bool:
 func _publish() -> void:
 	_session.add_dirty(_painter.dirty)
 	bus.notify_image_changed(_session.image.id, _painter.dirty)
+	if _painter.blocked.size() > _blocked_sent:
+		bus.notify_stencil_blocked(_session.image.id, _painter.blocked.slice(_blocked_sent))
+		_blocked_sent = _painter.blocked.size()

@@ -21,6 +21,11 @@ func mark_dirty(image_id: StringName) -> void:
 		_dirty[image_id] = true
 
 
+func mark_all_dirty() -> void:
+	for image_id: StringName in _textures:
+		_dirty[image_id] = true
+
+
 func has_dirty() -> bool:
 	return not _dirty.is_empty()
 

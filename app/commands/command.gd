@@ -19,3 +19,8 @@ func get_image_id() -> StringName:
 ## Changed area in image space; an empty rect means "refresh everything".
 func get_dirty_rect() -> Rect2i:
 	return Rect2i()
+
+
+## True if the command changes palette colors or order (views must refresh the LUT).
+func changes_palette() -> bool:
+	return false

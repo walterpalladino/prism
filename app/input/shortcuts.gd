@@ -45,6 +45,7 @@ const DEFAULTS: Dictionary[StringName, Array] = {
 	&"prism_paste": [[KEY_V, CTRL]],
 	&"prism_cancel": [[KEY_ESCAPE, 0]],
 	&"prism_toggle_timeline": [[KEY_T, CTRL]],
+	&"prism_toggle_stencil": [[KEY_QUOTELEFT, SHIFT], [KEY_ASCIITILDE, 0], [KEY_ASCIITILDE, SHIFT]],
 	&"prism_nudge_left": [[KEY_LEFT, 0]],
 	&"prism_nudge_right": [[KEY_RIGHT, 0]],
 	&"prism_nudge_up": [[KEY_UP, 0]],

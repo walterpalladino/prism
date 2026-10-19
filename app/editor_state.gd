@@ -21,6 +21,8 @@ var brush: Brush
 ## True while `brush` is a picked-up (custom) brush.
 var has_custom_brush: bool = false
 var filled_shapes: bool = false
+## Briefly highlight pixels the stencil protected (GDD §8.4).
+var flash_stencil: bool = true
 var global_fill: bool = false
 ## Canvas-space selection; an empty rect means no selection.
 var selection: Rect2i = Rect2i()

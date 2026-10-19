@@ -150,26 +150,26 @@ Also delivered early: a minimal palette swatch grid (LMB = FG, RMB = BG) so M2 i
 ## M3 — Palette, modes, stencil (2 weeks)
 
 ### Palette (§7.4)
-- [ ] Default 32-color palette + presets: PICO-8-style 16, EGA 16, grayscale ramp
-- [ ] Palette panel: swatch grid, FG/BG selection (LMB/RMB)
-- [ ] Palette editor: RGB/HSV sliders, hex entry
-- [ ] Reorder by drag **with remap** and **without remap** (both undoable commands)
-- [ ] Ramp definition UI (mark contiguous spans)
-- [ ] `[` / `]` step FG, `{` / `}` step BG
-- [ ] Import/export `.gpl`, `.hex`, PNG strip (codecs with malformed-input tests)
-- [ ] Palette edits as commands; emit `palette_changed()` and refresh the LUT texture
+- [x] Default 32-color palette + presets: PICO-8-style 16, EGA 16, grayscale ramp
+- [x] Palette panel: swatch grid, FG/BG selection (LMB/RMB)
+- [x] Palette editor: RGB/HSV sliders, hex entry — popup opened by double-clicking a swatch (`ColorEditDialog`); original vs new swatches; live preview; OK = one undo step, Cancel/close restores
+- [x] Reorder by drag **with remap** (pixels, transparent index, stencil and FG/BG follow) and **without remap** (Shift+drag) — both undoable
+- [x] Ramp definition UI: "Ramp FG→BG" / "Remove", blue bars over ramp spans; Shade wrap option (Q1 default: clamp)
+- [x] `[` / `]` step FG, `{` / `}` step BG
+- [x] Import/export `.gpl`, `.hex`, PNG strip (codecs with malformed-input tests); native file dialogs; presets in the Picture menu
+- [x] Palette edits as commands; `CommandBus.palette_changed` refreshes the LUT texture. A shorter loaded palette is padded so no pixel points outside it
 
 ### Modes UI
-- [ ] Mode selector (Color / Replace / Shade) in side panel and Mode menu
-- [ ] Status bar highlights mode when not Color (§8.4)
+- [x] Mode selector (Color / Replace / Shade) in side panel and Mode menu
+- [x] Status bar highlights mode when not Color (§8.4)
 
 ### Stencil (§7.5)
-- [ ] `Ctrl+click` swatch to lock; stencil row in side panel; `~` toggles stencil panel
-- [ ] Quick actions: Invert stencil, Lock all except FG
-- [ ] Orange underline on locked swatches
-- [ ] Brief flash on stencil-blocked pixels (configurable)
+- [x] `Ctrl+click` swatch to lock; stencil section in side panel; `~` toggles it. Stencil changes are undoable
+- [x] Quick actions: Invert stencil, Lock all except FG
+- [x] Orange underline on locked swatches
+- [x] Brief orange flash on stencil-blocked pixels (option in the stencil section)
 
-**Exit:** scripted test paints a shaded sphere using Shade mode only and matches a golden image.
+**Exit:** scripted test paints a shaded sphere using Shade mode only and matches a golden image. ✅ `tests/app/scenarios/shaded_sphere_test.gd` (outline protected by the stencil); 196 tests, API coverage 100 %.
 
 ---
 
@@ -313,7 +313,7 @@ Not part of the prototype milestones; set up once the repository is on GitHub. U
 
 ## Open questions to resolve (§12)
 
-- [ ] Q1 — Shade mode at ramp ends: clamp (default) or wrap? (both implemented: `InkContext.shade_wrap`; default still to confirm)
+- [ ] Q1 — Shade mode at ramp ends: clamp (default) or wrap? (both implemented, toggle in the Ramps section; confirm the default in playtests)
 - [ ] Q2 — `.aseprite` import worth the licensing review pre-1.0?
 - [x] Q3 — Compatibility vs Forward+ as shipped default → Compatibility (ADR 0006)
 - [ ] Q4 — Fixed layout vs dockable panels (fixed for prototype)

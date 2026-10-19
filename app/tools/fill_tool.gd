@@ -31,6 +31,8 @@ func begin(pos: Vector2i, button: PrismEnums.PaintButton, _mods: int) -> void:
 	else:
 		dirty = backend.flood_fill(image, p, value, stencil)
 	session.add_dirty(dirty)
+	if not dirty.has_area() and stencil.is_locked(image.get_index(p.x, p.y)):
+		bus.notify_stencil_blocked(image.id, PackedInt32Array([p.y * image.width + p.x]))
 	var patch: PixelPatch = session.commit("Fill")
 	if patch != null:
 		bus.record(patch)

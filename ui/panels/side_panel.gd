@@ -1,5 +1,6 @@
-## Right-hand panel (concept C1): palette, brush, drawing mode and tool options.
-## Stencil, layers and cycling sections arrive in M3-M5.
+## Right-hand panel (concept C1): palette, ramps, stencil, brush, drawing mode and tool
+## options. Double-clicking a swatch opens the color editor popup. Layers and cycling
+## sections arrive in M4-M5.
 class_name SidePanel
 extends PanelContainer
 
@@ -13,19 +14,42 @@ var _mode: OptionButton
 var _pixel_perfect: CheckBox
 var _filled: CheckBox
 var _global_fill: CheckBox
+var _stencil_heading: Label
+var _stencil: StencilPanel
 
 
-func setup(state: EditorState) -> void:
+func setup(state: EditorState, actions: PaletteActions) -> void:
 	_state = state
-	custom_minimum_size = Vector2(220, 0)
+	custom_minimum_size = Vector2(236, 0)
+	var scroll: ScrollContainer = ScrollContainer.new()
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	add_child(scroll)
 	var box: VBoxContainer = VBoxContainer.new()
 	box.add_theme_constant_override("separation", 6)
-	add_child(box)
+	box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(box)
 
 	box.add_child(_heading("PALETTE"))
 	var grid: PaletteGrid = PaletteGrid.new()
-	grid.setup(state)
+	grid.name = "PaletteGrid"
+	grid.setup(state, actions)
 	box.add_child(grid)
+	var color_dialog: ColorEditDialog = ColorEditDialog.new()
+	color_dialog.name = "ColorEditDialog"
+	color_dialog.setup(actions)
+	add_child(color_dialog)
+	Signals.on(grid.edit_requested, color_dialog.edit)
+
+	box.add_child(_heading("RAMPS"))
+	var ramps: RampPanel = RampPanel.new()
+	ramps.setup(state, actions)
+	box.add_child(ramps)
+
+	_stencil_heading = _heading("STENCIL  (~)")
+	box.add_child(_stencil_heading)
+	_stencil = StencilPanel.new()
+	_stencil.setup(state, actions)
+	box.add_child(_stencil)
 
 	box.add_child(_heading("BRUSH"))
 	var brush_row: HBoxContainer = HBoxContainer.new()
@@ -58,6 +82,12 @@ func setup(state: EditorState) -> void:
 
 	Signals.on(_state.changed, _refresh)
 	_refresh()
+
+
+## `~`: shows or hides the stencil section.
+func toggle_stencil_section() -> void:
+	_stencil.visible = not _stencil.visible
+	_stencil_heading.text = "STENCIL  (~)" if _stencil.visible else "STENCIL  (~ to show)"
 
 
 func _apply_builtin() -> void:

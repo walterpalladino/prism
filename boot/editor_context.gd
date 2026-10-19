@@ -11,6 +11,7 @@ var bus: CommandBus
 var state: EditorState
 var tools: ToolController
 var selection: SelectionActions
+var palette: PaletteActions
 var raster_backend: RasterBackend
 var textures: CelTextureCache
 var palette_texture: PaletteTexture
@@ -21,6 +22,7 @@ func _init() -> void:
 	bus = CommandBus.new(PrismDocument.create(DEFAULT_SIZE.x, DEFAULT_SIZE.y), History.new())
 	state = EditorState.new(bus)
 	selection = SelectionActions.new(bus, state)
+	palette = PaletteActions.new(bus, state)
 	tools = ToolController.new()
 	tools.register(PencilTool.new(bus, state))
 	tools.register(PencilTool.new(bus, state, true))
@@ -39,6 +41,7 @@ func _init() -> void:
 ## Replaces the open document with a new blank one.
 func new_document(size: Vector2i) -> void:
 	tools.cancel()
+	palette.commit_color()
 	state.layer_index = 0
 	state.frame_index = 0
 	state.set_selection(Rect2i())

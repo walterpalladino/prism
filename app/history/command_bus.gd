@@ -8,6 +8,11 @@ signal document_changed(dirty: Rect2i)
 ## Pixels of one image changed inside `dirty` (image space).
 signal image_changed(image_id: StringName, dirty: Rect2i)
 signal history_changed()
+## Palette colors, order, ramps or stencil changed.
+signal palette_changed()
+## Pixels at `offsets` (row-major indices into image `image_id`) were left alone because their
+## index is stencil-locked. Views may flash them (GDD §8.4).
+signal stencil_blocked(image_id: StringName, offsets: PackedInt32Array)
 ## A different document was loaded or created; everything must rebuild.
 signal document_replaced()
 
@@ -59,6 +64,17 @@ func notify_document_changed() -> void:
 	document_changed.emit(Rect2i())
 
 
+## Live preview of a palette edit (e.g. dragging a color slider); nothing is recorded.
+func notify_palette_changed() -> void:
+	palette_changed.emit()
+
+
+
+func notify_stencil_blocked(image_id: StringName, offsets: PackedInt32Array) -> void:
+	if not offsets.is_empty():
+		stencil_blocked.emit(image_id, offsets)
+
+
 func replace_document(p_document: PrismDocument) -> void:
 	document = p_document
 	history.clear()
@@ -71,5 +87,7 @@ func _notify(command: Command) -> void:
 	var dirty: Rect2i = command.get_dirty_rect()
 	if image_id != &"":
 		image_changed.emit(image_id, dirty)
+	if command.changes_palette():
+		palette_changed.emit()
 	document_changed.emit(dirty)
 	history_changed.emit()

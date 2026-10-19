@@ -7,9 +7,9 @@ const NEW_SIZES: Array[Vector2i] = [Vector2i(16, 16), Vector2i(32, 32), Vector2i
 
 ## Menu name -> list of [label, action, icon] ("" action = separator, "-" = disabled placeholder).
 const MENUS: Array[Array] = [
-	["Project", [["New 16×16", "new_16", "new"], ["New 32×32", "new_32", "new"], ["New 64×64", "new_64", "new"], ["New 128×128", "new_128", "new"], ["New 256×256", "new_256", "new"], ["", "", ""], ["Quit", "quit", "close"]]],
+	["Project", [["New 16×16", "new_16", "new"], ["New 32×32", "new_32", "new"], ["New 64×64", "new_64", "new"], ["New 128×128", "new_128", "new"], ["New 256×256", "new_256", "new"], ["", "", ""], ["Load palette…", "palette_load", "folder"], ["Save palette…", "palette_save", "save"], ["", "", ""], ["Quit", "quit", "close"]]],
 	["Edit", [["Undo", "prism_undo", "undo"], ["Redo", "prism_redo", "redo"], ["", "", ""], ["Cut", "prism_cut", "cut"], ["Copy", "prism_copy", "copy"], ["Paste", "prism_paste", "paste"], ["", "", ""], ["Deselect", "deselect", "close"]]],
-	["Picture", [["Coming in M3–M6", "-", ""]]],
+	["Picture", [["Palette: PRISM 32", "preset_default", ""], ["Palette: PICO-8 style 16", "preset_pico8", ""], ["Palette: EGA 16", "preset_ega", ""], ["Palette: Grayscale 16", "preset_gray", ""], ["", "", ""], ["Invert stencil", "stencil_invert", "lock"], ["Lock all except FG", "stencil_all_but_fg", "lock"], ["Clear stencil", "stencil_clear", "unlock"]]],
 	["Brush", [["Restore built-in", "prism_brush_restore", "brush"], ["Flip horizontal", "prism_brush_flip_h", "flip_h"], ["Flip vertical", "prism_brush_flip_v", "flip_v"], ["Rotate 90°", "prism_brush_rotate", "rotate"]]],
 	["Mode", [["Color", "mode_color", ""], ["Replace", "mode_replace", ""], ["Shade", "mode_shade", ""]]],
 	["Anim", [["Coming in M4–M5", "-", ""]]],
@@ -21,6 +21,8 @@ var canvas: CanvasView
 var status_bar: StatusBar
 var preview: PreviewWindow
 var timeline: PanelContainer
+var side_panel: SidePanel
+var message: AcceptDialog
 
 var _menu_actions: Dictionary[String, PackedStringArray] = {}
 
@@ -50,9 +52,9 @@ func _ready() -> void:
 	toolbox.setup(EditorContext.tools, EditorContext.state)
 	toolbox_panel.add_child(toolbox)
 	body.add_child(toolbox_panel)
-	var side: SidePanel = SidePanel.new()
-	side.setup(EditorContext.state)
-	body.add_child(side)
+	side_panel = SidePanel.new()
+	side_panel.setup(EditorContext.state, EditorContext.palette)
+	body.add_child(side_panel)
 
 	timeline = PanelContainer.new()
 	timeline.custom_minimum_size = Vector2(0, 110)
@@ -72,7 +74,9 @@ func _ready() -> void:
 	preview.setup(EditorContext.bus, EditorContext.state, EditorContext.textures, EditorContext.palette_texture)
 	add_child(preview)
 	preview.visible = false
-	Signals.on(EditorContext.bus.document_replaced, func() -> void: EditorContext.palette_texture.update(EditorContext.bus.document.palette))
+	message = AcceptDialog.new()
+	message.title = "PRISM"
+	add_child(message)
 
 
 func _unhandled_key_input(event: InputEvent) -> void:
@@ -133,9 +137,11 @@ func run_action(action: String) -> void:
 			canvas.set_show_grid(not canvas.show_grid)
 		"prism_undo":
 			if not tools.is_stroke_active():
+				EditorContext.palette.commit_color()
 				var _undone: bool = bus.undo()
 		"prism_redo":
 			if not tools.is_stroke_active():
+				EditorContext.palette.commit_color()
 				var _redone: bool = bus.redo()
 		"prism_copy":
 			var _copied: bool = EditorContext.selection.copy()
@@ -161,6 +167,26 @@ func run_action(action: String) -> void:
 		"tile_grid":
 			var next_tile: int = 0 if canvas.tile_grid >= 32 else maxi(8, canvas.tile_grid * 2)
 			canvas.set_tile_grid(next_tile)
+		"prism_toggle_stencil":
+			side_panel.toggle_stencil_section()
+		"stencil_invert":
+			EditorContext.palette.invert_stencil()
+		"stencil_all_but_fg":
+			EditorContext.palette.lock_all_except_fg()
+		"stencil_clear":
+			EditorContext.palette.clear_stencil()
+		"preset_default":
+			_load_preset(PalettePresets.default_32(), "PRISM 32")
+		"preset_pico8":
+			_load_preset(PalettePresets.pico8_style_16(), "PICO-8 style 16")
+		"preset_ega":
+			_load_preset(PalettePresets.ega_16(), "EGA 16")
+		"preset_gray":
+			_load_preset(PalettePresets.grayscale(16), "Grayscale 16")
+		"palette_load":
+			_open_palette_dialog(FileDialog.FILE_MODE_OPEN_FILE)
+		"palette_save":
+			_open_palette_dialog(FileDialog.FILE_MODE_SAVE_FILE)
 		"prism_toggle_timeline":
 			timeline.visible = not timeline.visible
 		"mode_color":
@@ -184,6 +210,47 @@ func run_action(action: String) -> void:
 				var side: int = action.trim_prefix("new_").to_int()
 				ctx.call(&"new_document", Vector2i(side, side))
 				canvas.fit()
+
+
+func _load_preset(palette: Palette, preset_name: String) -> void:
+	var padded: int = EditorContext.palette.load_palette(palette, "Palette: " + preset_name)
+	if padded > 0:
+		show_message("The image uses more colors than %s has; %d entries were kept from the old palette." % [preset_name, padded])
+
+
+func show_message(text: String) -> void:
+	message.dialog_text = text
+	message.popup_centered()
+
+
+func _open_palette_dialog(mode: FileDialog.FileMode) -> void:
+	var dialog: FileDialog = FileDialog.new()
+	dialog.use_native_dialog = true
+	dialog.access = FileDialog.ACCESS_FILESYSTEM
+	dialog.file_mode = mode
+	dialog.filters = PaletteFiles.FILTERS
+	dialog.title = "Load palette" if mode == FileDialog.FILE_MODE_OPEN_FILE else "Save palette"
+	if mode == FileDialog.FILE_MODE_SAVE_FILE:
+		dialog.current_file = "palette.gpl"
+	add_child(dialog)
+	Signals.on(dialog.file_selected, func(path: String) -> void:
+		_on_palette_file(path, mode)
+		dialog.queue_free())
+	Signals.on(dialog.canceled, dialog.queue_free)
+	dialog.popup_centered_ratio(0.6)
+
+
+func _on_palette_file(path: String, mode: FileDialog.FileMode) -> void:
+	if mode == FileDialog.FILE_MODE_SAVE_FILE:
+		var error: String = PaletteFiles.save_file(path, EditorContext.bus.document.palette)
+		if error != "":
+			show_message("Could not save the palette:\n" + error)
+		return
+	var result: PaletteResult = PaletteFiles.load_file(path)
+	if not result.is_ok():
+		show_message("Could not load the palette:\n" + result.error)
+		return
+	_load_preset(result.palette, path.get_file())
 
 
 func _build_menu_bar() -> MenuBar:

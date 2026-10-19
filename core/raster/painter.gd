@@ -6,12 +6,19 @@
 class_name Painter
 extends RefCounted
 
+const MAX_BLOCKED: int = 4096
+const _PAINTED: int = 1
+const _BLOCKED: int = 2
+
 var image: IndexedImage
 var brush: Brush
 var ink: Ink
 var ctx: InkContext
 var stencil: Stencil
 var dirty: Rect2i = Rect2i()
+## Row-major offsets of pixels the stencil protected during this stroke (each listed once,
+## capped at MAX_BLOCKED). Lets the UI flash them (GDD §8.4).
+var blocked: PackedInt32Array = PackedInt32Array()
 
 var _touched: PackedByteArray
 
@@ -42,16 +49,20 @@ func stamp(at: Vector2i) -> bool:
 			if brush_value == brush.transparent_index:
 				continue
 			var i: int = y * w + x
-			if _touched[i] == 1:
+			if _touched[i] != 0:
 				continue
 			var dest: int = px[i]
 			if stencil != null and stencil.is_locked(dest):
+				_touched[i] = _BLOCKED
+				if blocked.size() < MAX_BLOCKED:
+					@warning_ignore("return_value_discarded")
+					blocked.append(i)
 				continue
 			var result: int = ink.apply(dest, brush_value, brush.is_mask, ctx)
 			if result == Ink.SKIP or result == dest:
 				continue
 			px[i] = result
-			_touched[i] = 1
+			_touched[i] = _PAINTED
 			changed = true
 			_grow_dirty(x, y)
 	return changed
@@ -71,8 +82,9 @@ func unstamp(at: Vector2i, source: IndexedImage) -> void:
 			if brush.image.get_index(x - origin.x, y - origin.y) == brush.transparent_index:
 				continue
 			var i: int = y * w + x
-			px[i] = source.pixels[i]
-			_touched[i] = 0
+			if _touched[i] == _PAINTED:
+				px[i] = source.pixels[i]
+				_touched[i] = 0
 
 
 ## Stamps at every point in order. Returns true if any pixel changed.

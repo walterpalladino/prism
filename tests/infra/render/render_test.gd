@@ -89,3 +89,17 @@ func test_signals_helper_connects() -> void:
 	Signals.on(bus.history_changed, func() -> void: hits[0] += 1)
 	bus.history_changed.emit()
 	assert_int(hits[0]).is_equal(1)
+
+
+func test_stencil_flash_fades_out() -> void:
+	var flash: StencilFlash = auto_free(StencilFlash.new())
+	add_child(flash)
+	flash.flash(PackedVector2Array())
+	assert_bool(flash.is_flashing()).is_false()
+	flash.flash(PackedVector2Array([Vector2(1, 2)]))
+	assert_bool(flash.is_flashing()).is_true()
+	await get_tree().create_timer(StencilFlash.FLASH_SECONDS + 0.1).timeout
+	await get_tree().process_frame
+	await get_tree().process_frame
+	assert_bool(flash.is_flashing()).is_false()
+	remove_child(flash)

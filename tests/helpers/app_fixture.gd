@@ -9,6 +9,7 @@ var bus: CommandBus
 var state: EditorState
 var controller: ToolController
 var selection: SelectionActions
+var palette: PaletteActions
 
 
 func _init(width: int = 8, height: int = 8) -> void:
@@ -26,6 +27,7 @@ func _init(width: int = 8, height: int = 8) -> void:
 	controller.register(MoveCelTool.new(bus, state))
 	controller.register(BrushPickupTool.new(bus, state))
 	selection = SelectionActions.new(bus, state)
+	palette = PaletteActions.new(bus, state)
 
 
 func image() -> IndexedImage:

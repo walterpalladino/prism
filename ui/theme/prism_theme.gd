@@ -34,6 +34,19 @@ static func build_dark() -> Theme:
 	theme.set_stylebox("panel", "Panel", _box(PANEL, BORDER, 0))
 	theme.set_stylebox("panel", "PopupMenu", _box(PANEL_2, BORDER, 1))
 	theme.set_stylebox("panel", "Window", _box(PANEL, BORDER, 1))
+	# Embedded windows (dialogs, preview): slate frame with a title bar band.
+	var frame: StyleBoxFlat = _box(PANEL_2, BORDER, 1, 4)
+	frame.expand_margin_top = 28
+	frame.expand_margin_left = 1
+	frame.expand_margin_right = 1
+	frame.expand_margin_bottom = 1
+	theme.set_stylebox("embedded_border", "Window", frame)
+	var unfocused: StyleBoxFlat = frame.duplicate() as StyleBoxFlat
+	unfocused.bg_color = PANEL
+	theme.set_stylebox("embedded_unfocused_border", "Window", unfocused)
+	theme.set_color("title_color", "Window", TEXT)
+	theme.set_color("title_outline_modulate", "Window", Color(0, 0, 0, 0))
+	theme.set_constant("title_height", "Window", 28)
 	theme.set_stylebox("normal", "Button", _box(PANEL_2, BORDER, 1, 3))
 	theme.set_stylebox("hover", "Button", _box(BORDER, BLUE, 1, 3))
 	theme.set_stylebox("pressed", "Button", _box(ORANGE, ORANGE, 1, 3))

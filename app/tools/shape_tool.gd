@@ -14,6 +14,7 @@ var _session: StrokeSession
 var _anchor: Vector2i
 var _button: PrismEnums.PaintButton
 var _previous: Rect2i = Rect2i()
+var _last_painter: Painter
 
 
 func _init(p_bus: CommandBus, p_state: EditorState, p_kind: Kind) -> void:
@@ -54,6 +55,7 @@ func end(pos: Vector2i, mods: int) -> void:
 	if _session == null:
 		return
 	_render(state.to_image_space(pos), mods)
+	bus.notify_stencil_blocked(_session.image.id, _last_painter.blocked)
 	var patch: PixelPatch = _session.commit(LABELS[kind])
 	if patch != null:
 		bus.record(patch)
@@ -87,6 +89,7 @@ func _render(current: Vector2i, mods: int) -> void:
 	_session.restore(_previous)
 	var painter: Painter = Painter.new(image, state.brush, Ink.for_mode(state.draw_mode), state.make_ink_context(_button), bus.document.stencil)
 	var _changed: bool = painter.stamp_points(shape_points(_anchor, current, mods))
+	_last_painter = painter
 	var refresh: Rect2i = _previous
 	if painter.dirty.has_area():
 		refresh = painter.dirty if not refresh.has_area() else refresh.merge(painter.dirty)

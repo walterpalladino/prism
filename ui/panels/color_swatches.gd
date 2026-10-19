@@ -13,6 +13,7 @@ func setup(state: EditorState) -> void:
 	custom_minimum_size = Vector2(SIZE + OFFSET, SIZE + OFFSET)
 	Signals.on(_state.changed, queue_redraw)
 	Signals.on(_state.bus.document_replaced, queue_redraw)
+	Signals.on(_state.bus.palette_changed, queue_redraw)
 
 
 func _get_tooltip(_at_position: Vector2) -> String:
