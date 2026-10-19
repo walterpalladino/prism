@@ -48,7 +48,104 @@ godot --headless --path . -s res://bench/cpu_bench.gd
 godot --path . -s res://bench/display_bench.gd
 ```
 
-## Exporting
+## File formats and export
+
+All formats are in the **Project** menu. Exports ask which frames to include (all frames or one tag) and an
+integer pixel scale (1–8×, nearest neighbor).
+
+| Format | Read / write | Notes |
+|---|---|---|
+| `.prism` | R/W | Native document (see below) |
+| PNG, one frame | R/W | Import maps colors to the nearest palette entry; *New from PNG* uses the image's own colors (≤ 255) |
+| PNG sequence | W | `name_0001.png`, `name_0002.png`, …; can bake color cycling into frames |
+| Sprite sheet + JSON | W | All frames in one PNG plus a JSON description (see below) |
+| Godot `SpriteFrames` | W | `.tres` + sheet PNG, one animation per tag |
+| GIF | W | Animated, loops forever; can bake color cycling into frames |
+| Palettes `.gpl`, `.hex`, PNG strip | R/W | Project → Load / Save palette |
+
+### `.prism` documents
+
+A zip archive with `document.json` (versioned schema, currently v1) and `images/<id>.bin` (raw palette
+indices, one byte per pixel). Files are only ever parsed as JSON and raw bytes, and every field is validated:
+a damaged or newer-version file gives an error message, never a crash. Saves go to a temporary file first
+and replace the target only when complete.
+
+### Sprite sheet + JSON
+
+**Layout options:** row, column, grid or tight (trimmed); for grids, columns × rows (0 = automatic; if both
+are set they must hold every frame); outer margin (pixels between the sheet border and the frames) and
+spacing (pixels between frames). Margin and spacing are in output pixels, not multiplied by the scale.
+
+**JSON format.** The JSON follows the **TexturePacker "JSON (Array)"** layout, with the two extensions
+Aseprite adds to it: a per-frame `duration` (ms) and `meta.frameTags`. This is a de facto standard (there is
+no formal specification), so tools that read Aseprite or TexturePacker array sheets can usually read PRISM
+sheets as they are.
+
+```json
+{
+  "frames": [
+    {
+      "filename": "frame 1",
+      "frame": { "x": 8, "y": 8, "w": 48, "h": 32 },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 48, "h": 32 },
+      "sourceSize": { "w": 48, "h": 32 },
+      "duration": 100
+    }
+  ],
+  "meta": {
+    "app": "PRISM",
+    "version": "0.0.1",
+    "image": "hero.png",
+    "format": "RGBA8888",
+    "size": { "w": 168, "h": 48 },
+    "scale": "1",
+    "frameTags": [
+      { "name": "walk", "from": 0, "to": 3, "direction": "forward", "color": "#3d7bff" }
+    ]
+  }
+}
+```
+
+| Field | Meaning |
+|---|---|
+| `frames[]` | One entry per exported frame, in timeline order |
+| `frame` | Where the frame is in the sheet (pixels, includes margin and spacing) |
+| `trimmed`, `spriteSourceSize` | Tight layout only: the trimmed area inside the full frame |
+| `sourceSize` | Full frame size (canvas × scale) |
+| `duration` | Frame duration in milliseconds |
+| `meta.image`, `meta.size` | Sheet file name and size |
+| `meta.frameTags[]` | Tags inside the exported range: `from` / `to` are 0-based indices into `frames`; `direction` is `forward`, `reverse` or `pingpong` |
+
+**Known compatible readers** (from their documented formats; not every tool has been tested with PRISM):
+Phaser 3 (texture atlas loader, and its Aseprite animation import, which uses `frameTags` and `duration`),
+Godot community Aseprite importers, and TexturePacker / Aseprite JSON importers for Unity, Construct and
+Defold. **Not compatible as is:** PixiJS, which expects the "JSON (Hash)" variant (frames keyed by name),
+and libGDX, which uses its own `.atlas` text format.
+
+**Differences from Aseprite's own JSON:**
+
+- Tag `color` is `#rrggbb` (recent Aseprite versions write `#rrggbbaa`); readers generally ignore it.
+- No `meta.layers` or `meta.slices`: PRISM exports flattened frames and has no slices.
+- `direction` has no `pingpong_reverse` (Aseprite 1.3), because PRISM has no such tag direction.
+- Frame names are `frame 1`, `frame 2`, …; this only matters if a game looks frames up by name.
+
+### Godot `SpriteFrames`
+
+Save the `.tres` inside a Godot project (a folder with `project.godot` somewhere above it) so the sheet gets a
+`res://` path. Each tag becomes an animation (`default` when there are no tags), with looping on, playback
+`speed` = 1000 / the tag's shortest frame (ms) and each frame's `duration` relative to it, so frames last
+exactly as long as in PRISM. Reverse and ping-pong tags are written out as frame sequences.
+
+### GIF
+
+Global palette, per-frame delays (rounded without drift; GIF delays are in 1/100 s, minimum 2), transparency
+from the transparent index, loops forever. Layer opacity cannot be represented in GIF and is ignored. With
+*Bake color cycling*, frames are split wherever a cycle steps, each with its own color table, covering one
+full loop of animation and cycles (capped at 500 frames, with a warning).
+
+## Building PRISM
 
 `export_presets.cfg` defines Windows x86_64, macOS universal and Linux x86_64. Install the Godot 4.7.2
 export templates first (Editor → Manage Export Templates).

@@ -85,6 +85,8 @@ docs/    GDD, ADRs in docs/adr/ (Godot ignores this folder)
   `images/<id>.bin` raw indices. Changing the schema: bump the version and add a migration step.
 - App code reads and writes files only through `DocumentRepository` (documents, autosave lock) and
   `FileSink` (import/export); tests use `MemoryDocumentRepository` / `MemoryFileSink`.
+- User-facing file formats (including the sprite sheet JSON schema and its compatibility) are documented in
+  `README.md` → "File formats and export". Update it whenever an export or file format changes.
 - Exporters are pure: `FrameCompositor` flattens frames, `FrameSchedule` gives play order and cycling
   bake. `tests/infra/export/sprite_frames_godot_test.gd` runs a second Godot process to verify SpriteFrames.
 
