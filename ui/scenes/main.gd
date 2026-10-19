@@ -109,7 +109,10 @@ func _input(event: InputEvent) -> void:
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_CLOSE_REQUEST:
-		run_action("quit")
+		# Deferred: this notification is delivered while Godot walks the scene tree, and nodes
+		# cannot get new children during that walk, so the "Unsaved changes" dialog would fail
+		# to open and the app would stay running with nothing on screen.
+		run_action.call_deferred("quit")
 
 
 func _update_title() -> void:

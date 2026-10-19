@@ -312,6 +312,17 @@ Not part of the prototype milestones; set up once the repository is on GitHub. U
 
 ---
 
+## Palette editing follow-ups
+
+- [ ] Add and remove palette colors in the editor ("+" / "−" on the palette, undoable). Removing a color
+      that pixels use must not silently change the picture: ask which color to remap those pixels to (or
+      block removal while the color is in use). Keep ramps, cycles, stencil, FG/BG and the transparent
+      index consistent when indices shift. Limits: 1–256 entries.
+- [ ] "New palette…" with N blank entries or a gradient between two colors.
+- [ ] Preference: default palette for new documents (instead of PRISM 32).
+
+---
+
 ## Open questions to resolve (§12)
 
 - [ ] Q1 — Shade mode at ramp ends: clamp (default) or wrap? (both implemented, toggle in the Ramps section; confirm the default in playtests)

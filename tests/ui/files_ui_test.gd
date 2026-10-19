@@ -39,3 +39,21 @@ func test_new_document_asks_before_discarding(do_skip: bool = DisplayServer.get_
 	prompt.get_ok_button().pressed.emit()
 	await _runner.simulate_frames(2)
 	assert_int(EditorContext.bus.document.width).is_equal(32)
+
+
+func test_closing_the_window_with_unsaved_changes_asks_first(do_skip: bool = DisplayServer.get_name() == "headless", skip_reason: String = "needs a window") -> void:
+	EditorContext.tools.activate(&"pencil")
+	EditorContext.tools.press(Vector2i(2, 2), PrismEnums.PaintButton.PRIMARY, 0)
+	EditorContext.tools.release(Vector2i(2, 2), 0)
+	# Same notification the OS close button sends, delivered the same way (down the tree).
+	_runner.scene().get_tree().root.propagate_notification(Node.NOTIFICATION_WM_CLOSE_REQUEST)
+	await _runner.simulate_frames(3)
+	var prompt: ConfirmationDialog = null
+	for node: Node in _runner.scene().find_children("*", "ConfirmationDialog", true, false):
+		var dialog: ConfirmationDialog = node as ConfirmationDialog
+		if dialog.title == "Unsaved changes" and dialog.visible:
+			prompt = dialog
+	assert_object(prompt).override_failure_message("closing with unsaved changes must show the prompt").is_not_null()
+	prompt.get_cancel_button().pressed.emit()
+	await _runner.simulate_frames(2)
+	assert_bool(EditorContext.session.has_unsaved_changes()).is_true()
