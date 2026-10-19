@@ -68,7 +68,12 @@ static func build() -> Theme:
 	theme.set_color("icon_disabled_color", "Button", DIM)
 	theme.set_stylebox("panel", "PanelContainer", _box(PANEL, BORDER, 0))
 	theme.set_stylebox("panel", "Panel", _box(PANEL, BORDER, 0))
-	theme.set_stylebox("panel", "PopupMenu", _box(PANEL_2, BORDER, 1))
+	var menu_panel: StyleBoxFlat = _box(PANEL_2, BORDER, 1, 4)
+	menu_panel.content_margin_left = 4
+	menu_panel.content_margin_right = 4
+	menu_panel.content_margin_top = 6
+	menu_panel.content_margin_bottom = 6
+	theme.set_stylebox("panel", "PopupMenu", menu_panel)
 	theme.set_stylebox("panel", "Window", _box(PANEL, BORDER, 1))
 	# Embedded windows (dialogs, preview): slate frame with a title bar band.
 	var frame: StyleBoxFlat = _box(PANEL_2, BORDER, 1, 4)
@@ -93,21 +98,66 @@ static func build() -> Theme:
 	theme.set_stylebox("pressed", "OptionButton", _box(PANEL_2, BLUE, 1, 3))
 	theme.set_stylebox("normal", "LineEdit", _box(BG, BORDER, 1, 3))
 	# Menu bar: flat items that highlight on hover/open.
-	theme.set_stylebox("normal", "MenuBar", StyleBoxEmpty.new())
-	theme.set_stylebox("hover", "MenuBar", _box(PANEL_2, PANEL_2, 0, 3))
-	theme.set_stylebox("pressed", "MenuBar", _box(BLUE, BLUE, 0, 3))
-	theme.set_stylebox("hover_pressed", "MenuBar", _box(BLUE, BLUE, 0, 3))
-	theme.set_stylebox("disabled", "MenuBar", StyleBoxEmpty.new())
-	theme.set_color("font_hover_color", "MenuBar", strong)
-	theme.set_color("font_pressed_color", "MenuBar", Color.WHITE)
-	theme.set_color("font_hover_pressed_color", "MenuBar", Color.WHITE)
+	_menu_bar(theme)
 	for state_name: String in ["normal", "pressed", "hover_pressed", "focus"]:
 		theme.set_stylebox(state_name, "CheckBox", StyleBoxEmpty.new())
 	theme.set_stylebox("hover", "CheckBox", _box(PANEL_2, PANEL_2, 0, 3))
 	theme.set_color("font_pressed_color", "CheckBox", TEXT)
 	theme.set_color("font_hover_pressed_color", "CheckBox", strong)
-	theme.set_stylebox("hover", "PopupMenu", _box(BLUE, BLUE, 0, 2))
+	_popup_menu(theme)
 	return theme
+
+
+## Top menu bar (Project, Edit, ...): padded items with a gap between them. Hover changes only
+## the background (the text keeps its color, so it never looks bolder); the open menu is blue.
+static func _menu_bar(theme: Theme) -> void:
+	theme.set_constant("h_separation", "MenuBar", 4)
+	var normal: StyleBoxFlat = _menu_bar_box(Color(0, 0, 0, 0))
+	theme.set_stylebox("normal", "MenuBar", normal)
+	theme.set_stylebox("disabled", "MenuBar", normal)
+	theme.set_stylebox("hover", "MenuBar", _menu_bar_box(BORDER))
+	theme.set_stylebox("pressed", "MenuBar", _menu_bar_box(BLUE))
+	theme.set_stylebox("hover_pressed", "MenuBar", _menu_bar_box(BLUE))
+	theme.set_color("font_color", "MenuBar", TEXT)
+	theme.set_color("font_hover_color", "MenuBar", TEXT)
+	theme.set_color("font_pressed_color", "MenuBar", Color.WHITE)
+	theme.set_color("font_hover_pressed_color", "MenuBar", Color.WHITE)
+	theme.set_color("font_focus_color", "MenuBar", TEXT)
+
+
+static func _menu_bar_box(fill: Color) -> StyleBoxFlat:
+	var box: StyleBoxFlat = StyleBoxFlat.new()
+	box.bg_color = fill
+	box.set_corner_radius_all(3)
+	box.content_margin_left = 10
+	box.content_margin_right = 10
+	box.content_margin_top = 4
+	box.content_margin_bottom = 4
+	return box
+
+
+## Menus, dropdown lists (OptionButton) and context menus: roomy rows, a filled rounded hover
+## highlight with high-contrast text, dim shortcut hints and visible separators.
+static func _popup_menu(theme: Theme) -> void:
+	theme.set_constant("v_separation", "PopupMenu", 10)
+	theme.set_constant("h_separation", "PopupMenu", 8)
+	theme.set_constant("item_start_padding", "PopupMenu", 10)
+	theme.set_constant("item_end_padding", "PopupMenu", 12)
+	theme.set_constant("icon_max_width", "PopupMenu", 16)
+	var hover: StyleBoxFlat = StyleBoxFlat.new()
+	hover.bg_color = BLUE
+	hover.set_corner_radius_all(3)
+	# No content margins: the highlight must not grow into the neighboring rows.
+	theme.set_stylebox("hover", "PopupMenu", hover)
+	theme.set_color("font_hover_color", "PopupMenu", Color.WHITE)
+	theme.set_color("font_accelerator_color", "PopupMenu", DIM)
+	theme.set_color("font_separator_color", "PopupMenu", DIM)
+	var separator: StyleBoxLine = StyleBoxLine.new()
+	separator.color = BORDER
+	separator.thickness = 1
+	separator.grow_begin = -6
+	separator.grow_end = -6
+	theme.set_stylebox("separator", "PopupMenu", separator)
 
 
 static func _box(fill: Color, border: Color, border_width: int, radius: int = 0) -> StyleBoxFlat:
