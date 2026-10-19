@@ -20,17 +20,17 @@ Section references like `§7.2` point to the GDD. Milestones follow the roadmap 
 ## M0 — Setup & technical spikes (1 week)
 
 ### Project setup
-- [ ] Pin Godot **4.7.x**; record the exact version in `README.md` / CI config
-- [ ] Switch renderer from Forward+ to **Compatibility** in `project.godot` (currently `Forward Plus`) (§9.4)
-- [ ] Remove the 3D physics engine setting (Jolt) — not needed for a 2D editor
-- [ ] Set GDScript warnings to **Error**: `untyped_declaration`, `inferred_declaration`, `unsafe_property_access`, `unsafe_method_access`, `unsafe_cast`, `unsafe_call_argument`, `return_value_discarded` (verify names in 4.7 Project Settings)
-- [ ] Enable *Snap 2D Transforms to Pixel* and default nearest texture filtering
-- [ ] Create folder skeleton: `boot/`, `core/{model,raster,modes,cycling}/`, `app/{commands,history,tools,playback,input}/`, `infra/{render,codecs,storage}/`, `ui/{scenes,theme}/`, `tests/golden/`, `tools/`, `docs/adr/` (§9.3)
-- [ ] Move `docs/prism-gdd/tools/gen_concepts.py` handling decision (keep in docs or move to `tools/`)
-- [ ] Install **gdUnit4** under `addons/gdUnit4/` and enable the plugin
-- [ ] Add `boot/editor_context.gd` as the single autoload (empty composition root)
-- [ ] Update `.gitignore` (`.godot/`, `.DS_Store`, export builds); decide whether to commit `*.import` files and `.vscode/`
-- [ ] Write `CLAUDE.md` with architecture rules (§9.2), typing rule (§6.2) and file-loading security rule (§9.6)
+- [x] Pin Godot **4.7.2**; recorded in `README.md` and `CLAUDE.md` (CI config pending)
+- [x] Switch renderer from Forward+ to **Compatibility** in `project.godot` (§9.4)
+- [x] Remove the 3D physics engine setting (Jolt) — not needed for a 2D editor
+- [x] Set GDScript warnings to **Error**: `untyped_declaration`, `inferred_declaration`, `unsafe_property_access`, `unsafe_method_access`, `unsafe_cast`, `unsafe_call_argument`, `return_value_discarded` (names verified against 4.7.2)
+- [x] Enable *Snap 2D Transforms to Pixel* and default nearest texture filtering
+- [x] Create folder skeleton: `boot/`, `core/{model,raster,modes,cycling}/`, `app/{commands,history,tools,playback,input}/`, `infra/{render,codecs,storage}/`, `ui/{scenes,theme}/`, `tests/golden/`, `tools/`, `docs/adr/` (§9.3)
+- [x] Move `gen_concepts.py` to `tools/` (output path updated); `docs/` and `tools/` have `.gdignore`
+- [x] Install **gdUnit4** 6.2.2 under `addons/gdUnit4/` and enable the plugin
+- [x] Add `boot/editor_context.gd` as the single autoload (empty composition root)
+- [x] Update `.gitignore` (export builds, `reports/`, `.vscode/`); `*.import` files are committed as Godot recommends
+- [x] Write `CLAUDE.md` with architecture rules (§9.2), typing rule (§6.2) and file-loading security rule (§9.6)
 
 ### CI
 - [ ] CI job: download pinned Godot 4.7.x, run gdUnit4 suites with `godot --headless` on every push

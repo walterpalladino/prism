@@ -27,3 +27,13 @@ mono_crash.*.json
 .env.production.local
 .env
 
+
+# Export builds
+/build/
+/export/
+
+# Editor settings with machine-specific paths
+.vscode/
+
+# gdUnit4 test reports
+/reports/

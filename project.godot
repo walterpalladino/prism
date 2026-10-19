@@ -10,19 +10,38 @@ config_version=5
 
 [application]
 
-config/name="prism"
-config/features=PackedStringArray("4.7", "Forward Plus")
+config/name="PRISM"
+config/description="Palette-first pixel painter with a modern animation timeline."
+config/version="0.0.1"
+config/features=PackedStringArray("4.7", "GL Compatibility")
 config/icon="res://icon.svg"
+
+[autoload]
+
+EditorContext="*res://boot/editor_context.gd"
+
+[debug]
+
+gdscript/warnings/untyped_declaration=2
+gdscript/warnings/inferred_declaration=2
+gdscript/warnings/unsafe_property_access=2
+gdscript/warnings/unsafe_method_access=2
+gdscript/warnings/unsafe_cast=2
+gdscript/warnings/unsafe_call_argument=2
+gdscript/warnings/return_value_discarded=2
 
 [display]
 
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
 
-[physics]
+[editor_plugins]
 
-3d/physics_engine="Jolt Physics"
+enabled=PackedStringArray("res://addons/gdUnit4/plugin.cfg")
 
 [rendering]
 
-rendering_device/driver.windows="d3d12"
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+textures/canvas_textures/default_texture_filter=0
+2d/snap/snap_2d_transforms_to_pixel=true

@@ -1,7 +1,7 @@
 """Generates the original concept-art SVGs for the PRISM GDD."""
 from pathlib import Path
 
-OUT = Path(__file__).resolve().parent.parent / "concept-art"
+OUT = Path(__file__).resolve().parent.parent / "docs" / "prism-gdd" / "concept-art"
 OUT.mkdir(parents=True, exist_ok=True)
 
 BG = "#1b1c23"
