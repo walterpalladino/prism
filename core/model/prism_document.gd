@@ -89,6 +89,28 @@ func get_cel_image(layer_index: int, frame_index: int) -> IndexedImage:
 	return images[cel.image_id]
 
 
+## Fully independent copy (pixels included). Used for autosave snapshots.
+func duplicate_document() -> PrismDocument:
+	var copy: PrismDocument = PrismDocument.new(id, width, height, palette.duplicate_palette())
+	copy.color_mode = color_mode
+	copy.transparent_index = transparent_index
+	copy.next_id = next_id
+	copy.stencil = stencil.duplicate_stencil()
+	for layer: Layer in layers:
+		copy.layers.append(layer.duplicate_layer(layer.id))
+	for frame: Frame in frames:
+		copy.frames.append(frame.duplicate_frame(frame.id))
+	for image_id: StringName in images:
+		copy.images[image_id] = images[image_id].duplicate_image(image_id)
+	for key: Vector2i in cels:
+		copy.cels[key] = cels[key].duplicate_cel()
+	for tag: Tag in tags:
+		copy.tags.append(tag.duplicate_tag())
+	for cycle: CycleRange in cycles:
+		copy.cycles.append(cycle.duplicate_cycle())
+	return copy
+
+
 ## Rebuilds the (layer_index, frame_index) keys of `cels` from each cel's layer and frame ids,
 ## dropping cels whose layer or frame no longer exists. Call after reordering, inserting or
 ## removing layers or frames.

@@ -16,6 +16,13 @@ var timeline: TimelineActions
 var playback: Playback
 var cycling: ColorCycling
 var palette_display: PaletteDisplay
+var repository: DocumentRepository
+var session: DocumentSession
+var autosave: Autosave
+var files: FileSink
+var exports: ExportActions
+## True when the previous run did not exit cleanly and left an autosave to recover.
+var recovery_available: bool = false
 var raster_backend: RasterBackend
 var textures: CelTextureCache
 var palette_texture: PaletteTexture
@@ -46,6 +53,12 @@ func _init() -> void:
 	Signals.on(playback.frame_changed, state.show_frame)
 	Signals.on(playback.playing_changed, _on_playing_changed)
 	Signals.on(tools.stroke_started, playback.stop)
+	repository = ZipDocumentRepository.new()
+	session = DocumentSession.new(bus, repository)
+	autosave = Autosave.new(session, repository)
+	recovery_available = autosave.begin_session()
+	files = DiskFileSink.new()
+	exports = ExportActions.new(bus, state, files)
 	textures = CelTextureCache.new()
 	palette_texture = PaletteTexture.new(bus.document.palette)
 	palette_display = PaletteDisplay.new(palette_texture, cycling)
@@ -54,6 +67,7 @@ func _init() -> void:
 func _process(delta: float) -> void:
 	playback.advance(delta * 1000.0)
 	cycling.advance(delta)
+	autosave.tick(delta)
 
 
 func _on_playing_changed(playing: bool) -> void:
@@ -77,4 +91,25 @@ func open_document(document: PrismDocument) -> void:
 	state.frame_index = 0
 	state.frame_range = Vector2i.ZERO
 	state.set_selection(Rect2i())
-	bus.replace_document(document)
+	session.start_new(document)
+
+
+## Clean shutdown: waits for a running autosave and removes the crash-recovery files.
+func shutdown() -> void:
+	autosave.end_session()
+
+
+## Opens a .prism file. Returns "" or an error (the current document is kept on error).
+func open_file(path: String) -> String:
+	tools.cancel()
+	playback.stop()
+	palette.commit_color()
+	_reset_view_state()
+	return session.open(path)
+
+
+func _reset_view_state() -> void:
+	state.layer_index = 0
+	state.frame_index = 0
+	state.frame_range = Vector2i.ZERO
+	state.set_selection(Rect2i())

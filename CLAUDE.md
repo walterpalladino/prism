@@ -75,6 +75,15 @@ docs/    GDD, ADRs in docs/adr/ (Godot ignores this folder)
   cell grid in `ICONS` there, keeping the Pixelarticons look.
 - Never add icons or art from another source without recording its license in `CREDITS.md`.
 
+## Files and export
+
+- `.prism` = zip of `document.json` (schema in `PrismJson`, version in `PrismMigrations.CURRENT_VERSION`) +
+  `images/<id>.bin` raw indices. Changing the schema: bump the version and add a migration step.
+- App code reads and writes files only through `DocumentRepository` (documents, autosave lock) and
+  `FileSink` (import/export); tests use `MemoryDocumentRepository` / `MemoryFileSink`.
+- Exporters are pure: `FrameCompositor` flattens frames, `FrameSchedule` gives play order and cycling
+  bake. `tests/infra/export/sprite_frames_godot_test.gd` runs a second Godot process to verify SpriteFrames.
+
 ## Security
 
 Never load project or user files with `str_to_var()`, `bytes_to_var_with_objects()` or `ResourceLoader`.

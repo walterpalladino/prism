@@ -7,7 +7,7 @@ const NEW_SIZES: Array[Vector2i] = [Vector2i(16, 16), Vector2i(32, 32), Vector2i
 
 ## Menu name -> list of [label, action, icon] ("" action = separator, "-" = disabled placeholder).
 const MENUS: Array[Array] = [
-	["Project", [["New 16×16", "new_16", "new"], ["New 32×32", "new_32", "new"], ["New 64×64", "new_64", "new"], ["New 128×128", "new_128", "new"], ["New 256×256", "new_256", "new"], ["", "", ""], ["Open demo: Waterfall (color cycling)", "demo_waterfall", "play"], ["", "", ""], ["Load palette…", "palette_load", "folder"], ["Save palette…", "palette_save", "save"], ["", "", ""], ["Quit", "quit", "close"]]],
+	["Project", [["New 16×16", "new_16", "new"], ["New 32×32", "new_32", "new"], ["New 64×64", "new_64", "new"], ["New 128×128", "new_128", "new"], ["New 256×256", "new_256", "new"], ["", "", ""], ["Open…", "prism_open", "folder"], ["Save", "prism_save", "save"], ["Save as…", "prism_save_as", "save"], ["", "", ""], ["Import PNG into cel…", "import_png", "preview"], ["New from PNG…", "new_from_png", "preview"], ["", "", ""], ["Export PNG (current frame)…", "export_png", ""], ["Export PNG sequence…", "export_sequence", ""], ["Export sprite sheet + JSON…", "export_sheet", ""], ["Export Godot SpriteFrames…", "export_sprite_frames", ""], ["Export GIF…", "export_gif", ""], ["", "", ""], ["Open demo: Waterfall (color cycling)", "demo_waterfall", "play"], ["", "", ""], ["Load palette…", "palette_load", "folder"], ["Save palette…", "palette_save", "save"], ["", "", ""], ["Quit", "quit", "close"]]],
 	["Edit", [["Undo", "prism_undo", "undo"], ["Redo", "prism_redo", "redo"], ["", "", ""], ["Cut", "prism_cut", "cut"], ["Copy", "prism_copy", "copy"], ["Paste", "prism_paste", "paste"], ["", "", ""], ["Deselect", "deselect", "close"]]],
 	["Picture", [["Palette: PRISM 32", "preset_default", ""], ["Palette: PICO-8 style 16", "preset_pico8", ""], ["Palette: EGA 16", "preset_ega", ""], ["Palette: Grayscale 16", "preset_gray", ""], ["", "", ""], ["Invert stencil", "stencil_invert", "lock"], ["Lock all except FG", "stencil_all_but_fg", "lock"], ["Clear stencil", "stencil_clear", "unlock"]]],
 	["Brush", [["Restore built-in", "prism_brush_restore", "brush"], ["Flip horizontal", "prism_brush_flip_h", "flip_h"], ["Flip vertical", "prism_brush_flip_v", "flip_v"], ["Rotate 90°", "prism_brush_rotate", "rotate"]]],
@@ -27,8 +27,16 @@ var message: AcceptDialog
 var _menu_actions: Dictionary[String, PackedStringArray] = {}
 
 
+const PRISM_FILTERS: PackedStringArray = ["*.prism ; PRISM document"]
+const PNG_FILTERS: PackedStringArray = ["*.png ; PNG image"]
+const GIF_FILTERS: PackedStringArray = ["*.gif ; Animated GIF"]
+const TRES_FILTERS: PackedStringArray = ["*.tres ; Godot SpriteFrames"]
+const LAYOUTS: PackedStringArray = ["Row", "Column", "Grid", "Tight (trimmed)"]
+
+
 func _ready() -> void:
 	theme = PrismTheme.build_dark()
+	get_tree().set_auto_accept_quit(false)
 	var background: ColorRect = ColorRect.new()
 	background.color = PrismTheme.BG
 	background.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -75,6 +83,10 @@ func _ready() -> void:
 	message = AcceptDialog.new()
 	message.title = "PRISM"
 	add_child(message)
+	Signals.on(EditorContext.session.changed, _update_title)
+	_update_title()
+	if EditorContext.recovery_available:
+		_offer_recovery.call_deferred()
 
 
 ## Tab toggles color cycling (DPaint). It is caught here, before the GUI would use it to
@@ -87,6 +99,15 @@ func _input(event: InputEvent) -> void:
 		return
 	run_action("prism_toggle_cycling")
 	get_viewport().set_input_as_handled()
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_CLOSE_REQUEST:
+		run_action("quit")
+
+
+func _update_title() -> void:
+	get_window().title = "PRISM — " + EditorContext.session.title()
 
 
 func _unhandled_key_input(event: InputEvent) -> void:
@@ -206,9 +227,10 @@ func run_action(action: String) -> void:
 		"prism_toggle_cycling":
 			EditorContext.cycling.toggle(&"tab")
 		"demo_waterfall":
-			ctx.call(&"open_document", DemoDocuments.waterfall())
-			EditorContext.cycling.request(&"tab", true)
-			canvas.fit()
+			_confirm_discard(func() -> void:
+				ctx.call(&"open_document", DemoDocuments.waterfall())
+				EditorContext.cycling.request(&"tab", true)
+				canvas.fit())
 		"prism_toggle_stencil":
 			side_panel.toggle_stencil_section()
 		"stencil_invert":
@@ -246,12 +268,195 @@ func run_action(action: String) -> void:
 		"preview_2":
 			preview.set_preview_scale(2)
 		"quit":
-			get_tree().quit()
+			_confirm_discard(func() -> void:
+				EditorContext.shutdown()
+				get_tree().quit())
+		"prism_open":
+			_confirm_discard(func() -> void: _file_dialog(FileDialog.FILE_MODE_OPEN_FILE, "Open", PRISM_FILTERS, "", _open_file))
+		"prism_save":
+			if EditorContext.session.path == "":
+				run_action("prism_save_as")
+			else:
+				_show_result(EditorContext.session.save(), "")
+				EditorContext.autosave.discard()
+		"prism_save_as":
+			_file_dialog(FileDialog.FILE_MODE_SAVE_FILE, "Save as", PRISM_FILTERS, EditorContext.session.display_name().get_basename() + ".prism", func(path: String) -> void:
+				_show_result(EditorContext.session.save_as(path), "")
+				EditorContext.autosave.discard())
+		"import_png":
+			_file_dialog(FileDialog.FILE_MODE_OPEN_FILE, "Import PNG into the current cel", PNG_FILTERS, "", func(path: String) -> void:
+				_show_result(EditorContext.exports.import_png_into_cel(path), ""))
+		"new_from_png":
+			_confirm_discard(func() -> void: _file_dialog(FileDialog.FILE_MODE_OPEN_FILE, "New from PNG", PNG_FILTERS, "", _new_from_png))
+		"export_png":
+			_export_form("Export PNG", false, false, false, func(values: Dictionary) -> void:
+				var scale: int = values["scale"]
+				_file_dialog(FileDialog.FILE_MODE_SAVE_FILE, "Export PNG", PNG_FILTERS, _export_name() + ".png", func(path: String) -> void:
+					_show_result(EditorContext.exports.export_frame_png(path, scale), "Exported " + path.get_file())))
+		"export_sequence":
+			_export_form("Export PNG sequence", true, true, false, func(values: Dictionary) -> void:
+				var options: ExportOptions = _options(values)
+				_file_dialog(FileDialog.FILE_MODE_SAVE_FILE, "Export PNG sequence (frames are numbered)", PNG_FILTERS, _export_name() + ".png", func(path: String) -> void:
+					_show_result(EditorContext.exports.export_png_sequence(path, options), "Exported %d frames" % options.schedule(EditorContext.bus.document).size())))
+		"export_sheet":
+			_export_form("Export sprite sheet", true, false, true, func(values: Dictionary) -> void:
+				var options: ExportOptions = _options(values)
+				_file_dialog(FileDialog.FILE_MODE_SAVE_FILE, "Export sprite sheet (+ .json)", PNG_FILTERS, _export_name() + ".png", func(path: String) -> void:
+					_show_result(EditorContext.exports.export_sprite_sheet(path, options), "Exported " + path.get_basename().get_file() + ".png + .json")))
+		"export_sprite_frames":
+			_export_form("Export Godot SpriteFrames", false, false, false, func(values: Dictionary) -> void:
+				var scale: int = values["scale"]
+				_file_dialog(FileDialog.FILE_MODE_SAVE_FILE, "Export SpriteFrames into a Godot project", TRES_FILTERS, _export_name() + ".tres", func(path: String) -> void:
+					_show_result(EditorContext.exports.export_sprite_frames(path, scale), "Exported " + path.get_basename().get_file() + ".tres + .png (one animation per tag)")))
+		"export_gif":
+			_export_form("Export GIF", true, true, false, func(values: Dictionary) -> void:
+				var options: ExportOptions = _options(values)
+				_file_dialog(FileDialog.FILE_MODE_SAVE_FILE, "Export GIF", GIF_FILTERS, _export_name() + ".gif", func(path: String) -> void:
+					_show_result(EditorContext.exports.export_gif(path, options), "Exported " + path.get_file())))
 		_:
 			if action.begins_with("new_"):
 				var side: int = action.trim_prefix("new_").to_int()
-				ctx.call(&"new_document", Vector2i(side, side))
-				canvas.fit()
+				_confirm_discard(func() -> void:
+					ctx.call(&"new_document", Vector2i(side, side))
+					canvas.fit())
+
+
+# --- files -------------------------------------------------------------------
+
+## Runs `then` right away, or after asking whether to discard unsaved changes.
+func _confirm_discard(then: Callable) -> void:
+	if not EditorContext.session.has_unsaved_changes():
+		then.call()
+		return
+	var dialog: ConfirmationDialog = ConfirmationDialog.new()
+	dialog.title = "Unsaved changes"
+	dialog.dialog_text = "%s has unsaved changes." % EditorContext.session.display_name()
+	dialog.ok_button_text = "Discard"
+	var save_button: Button = dialog.add_button("Save", true, "save")
+	save_button.custom_minimum_size = Vector2(70, 0)
+	add_child(dialog)
+	Signals.on(dialog.confirmed, func() -> void:
+		dialog.queue_free()
+		then.call())
+	Signals.on(dialog.canceled, dialog.queue_free)
+	Signals.on(dialog.custom_action, func(_action: StringName) -> void:
+		dialog.queue_free()
+		_save_then(then))
+	dialog.popup_centered()
+
+
+## Saves (asking for a path if needed), then runs `then` if the save worked.
+func _save_then(then: Callable) -> void:
+	var session: DocumentSession = EditorContext.session
+	if session.path != "":
+		if _report(session.save(), ""):
+			then.call()
+		return
+	_file_dialog(FileDialog.FILE_MODE_SAVE_FILE, "Save as", PRISM_FILTERS, "untitled.prism", func(path: String) -> void:
+		if _report(session.save_as(path), ""):
+			then.call())
+
+
+func _open_file(path: String) -> void:
+	if _report(EditorContext.open_file(path), ""):
+		canvas.fit()
+
+
+func _new_from_png(path: String) -> void:
+	var result: DocumentResult = EditorContext.exports.document_from_png(path)
+	if not result.is_ok():
+		show_message(result.error)
+		return
+	EditorContext.call(&"open_document", result.document)
+	canvas.fit()
+
+
+func _offer_recovery() -> void:
+	var dialog: ConfirmationDialog = ConfirmationDialog.new()
+	dialog.title = "Recover unsaved work?"
+	dialog.dialog_text = "PRISM did not close properly last time.\nOpen the autosaved document?"
+	dialog.ok_button_text = "Recover"
+	dialog.cancel_button_text = "Discard"
+	add_child(dialog)
+	Signals.on(dialog.confirmed, func() -> void:
+		dialog.queue_free()
+		var result: DocumentResult = EditorContext.autosave.load_recovered()
+		if result.is_ok():
+			EditorContext.session.open_recovered(result.document)
+			canvas.fit()
+		else:
+			show_message("The autosave could not be read:\n" + result.error))
+	Signals.on(dialog.canceled, func() -> void:
+		dialog.queue_free()
+		EditorContext.autosave.discard())
+	dialog.popup_centered()
+
+
+func _show_result(error: String, success: String) -> void:
+	var _ok: bool = _report(error, success)
+
+
+## Shows `error` if there is one, else `success` (if not empty). Returns true on success.
+func _report(error: String, success: String) -> bool:
+	if error != "":
+		show_message(error)
+		return false
+	if success != "":
+		show_message(success)
+	return true
+
+
+func _export_name() -> String:
+	return EditorContext.session.display_name().get_basename().to_snake_case()
+
+
+func _file_dialog(mode: FileDialog.FileMode, title_text: String, filters: PackedStringArray, file_name: String, on_selected: Callable) -> void:
+	var dialog: FileDialog = FileDialog.new()
+	dialog.use_native_dialog = true
+	dialog.access = FileDialog.ACCESS_FILESYSTEM
+	dialog.file_mode = mode
+	dialog.filters = filters
+	dialog.title = title_text
+	if file_name != "":
+		dialog.current_file = file_name
+	if EditorContext.session.path != "":
+		dialog.current_dir = EditorContext.session.path.get_base_dir()
+	add_child(dialog)
+	Signals.on(dialog.file_selected, func(path: String) -> void:
+		dialog.queue_free()
+		on_selected.call(path))
+	Signals.on(dialog.canceled, dialog.queue_free)
+	dialog.popup_centered_ratio(0.6)
+
+
+## Asks for export options, then calls `then` with the form values.
+func _export_form(title_text: String, with_scope: bool, with_bake: bool, with_layout: bool, then: Callable) -> void:
+	var form: FormDialog = FormDialog.new()
+	form.title = title_text
+	if with_scope:
+		form.add_choice("scope", "Frames", EditorContext.exports.scope_names(), 0)
+	form.add_number("scale", "Scale", 1, 1, 8, "×")
+	if with_layout:
+		form.add_choice("layout", "Layout", LAYOUTS, ExportOptions.Layout.GRID)
+	if with_bake and not EditorContext.bus.document.cycles.is_empty():
+		form.add_check("bake", "Bake color cycling", true)
+	Signals.on(form.submitted, func(values: Dictionary) -> void:
+		if values.get("bake", false):
+			var predicted: int = EditorContext.exports.predicted_frames(_options(values))
+			if predicted > FrameSchedule.DEFAULT_MAX_FRAMES:
+				show_message("Baking color cycling needs %d frames; the export is capped at %d." % [predicted, FrameSchedule.DEFAULT_MAX_FRAMES])
+		then.call(values))
+	form.open(self)
+
+
+func _options(values: Dictionary) -> ExportOptions:
+	var scope: int = values.get("scope", 0)
+	var options: ExportOptions = EditorContext.exports.options_for(scope)
+	options.scale = values.get("scale", 1)
+	var layout: int = values.get("layout", ExportOptions.Layout.GRID)
+	options.layout = layout as ExportOptions.Layout
+	options.bake_cycles = values.get("bake", false)
+	return options
 
 
 func _load_preset(palette: Palette, preset_name: String) -> void:

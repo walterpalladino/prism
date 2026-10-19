@@ -2,53 +2,9 @@ extends GdUnitTestSuite
 @warning_ignore_start("return_value_discarded")  # gdUnit4 fluent asserts return self
 
 
-## Reference GIF LZW decoder (GIF89a appendix F), written independently of the encoder.
-func _decode(data: PackedByteArray, min_code_size: int) -> PackedByteArray:
-	var clear_code: int = 1 << min_code_size
-	var eoi_code: int = clear_code + 1
-	var code_size: int = min_code_size + 1
-	var table: Array[PackedByteArray] = []
-	var out: PackedByteArray = PackedByteArray()
-	var prev: PackedByteArray = PackedByteArray()
-	var has_prev: bool = false
-	var bit_pos: int = 0
-	var total_bits: int = data.size() * 8
-	while bit_pos + code_size <= total_bits:
-		var code: int = 0
-		for b: int in code_size:
-			var bit: int = (data[(bit_pos + b) >> 3] >> ((bit_pos + b) & 7)) & 1
-			code |= bit << b
-		bit_pos += code_size
-		if code == clear_code:
-			table.clear()
-			for i: int in clear_code + 2:
-				table.append(PackedByteArray([i & 0xff]))
-			code_size = min_code_size + 1
-			has_prev = false
-			continue
-		if code == eoi_code:
-			break
-		var entry: PackedByteArray
-		if code < table.size():
-			entry = table[code]
-		else:
-			entry = prev.duplicate()
-			entry.append(prev[0])
-		out.append_array(entry)
-		if has_prev and table.size() < GifLzw.MAX_CODE:
-			var added: PackedByteArray = prev.duplicate()
-			added.append(entry[0])
-			table.append(added)
-			if table.size() == (1 << code_size) and code_size < 12:
-				code_size += 1
-		prev = entry
-		has_prev = true
-	return out
-
-
 func _round_trip(indices: PackedByteArray, colors: int) -> void:
 	var mcs: int = GifLzw.min_code_size_for(colors)
-	var decoded: PackedByteArray = _decode(GifLzw.encode(indices, mcs), mcs)
+	var decoded: PackedByteArray = GifReader.decode_lzw(GifLzw.encode(indices, mcs), mcs)
 	assert_int(decoded.size()).is_equal(indices.size())
 	assert_bool(decoded == indices).override_failure_message("round trip mismatch (%d colors, %d px)" % [colors, indices.size()]).is_true()
 

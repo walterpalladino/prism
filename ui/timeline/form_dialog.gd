@@ -45,6 +45,12 @@ func add_choice(key: String, label: String, options: PackedStringArray, selected
 	_add_row(key, label, option)
 
 
+func add_check(key: String, label: String, value: bool) -> void:
+	var check: CheckBox = CheckBox.new()
+	check.button_pressed = value
+	_add_row(key, label, check)
+
+
 func add_color(key: String, label: String, value: Color) -> void:
 	var picker: ColorPickerButton = ColorPickerButton.new()
 	picker.color = value
@@ -90,6 +96,8 @@ func values() -> Dictionary:
 			result[key] = int((field as SpinBox).value)
 		elif field is OptionButton:
 			result[key] = (field as OptionButton).selected
+		elif field is CheckBox:
+			result[key] = (field as CheckBox).button_pressed
 		elif field is ColorPickerButton:
 			result[key] = (field as ColorPickerButton).color
 	return result

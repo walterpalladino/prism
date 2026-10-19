@@ -18,6 +18,8 @@ signal document_replaced()
 
 var document: PrismDocument
 var history: History
+## Increases on every recorded, undone or redone change; compared to detect unsaved work.
+var revision: int = 0
 
 
 func _init(p_document: PrismDocument, p_history: History) -> void:
@@ -77,12 +79,14 @@ func notify_stencil_blocked(image_id: StringName, offsets: PackedInt32Array) -> 
 
 func replace_document(p_document: PrismDocument) -> void:
 	document = p_document
+	revision += 1
 	history.clear()
 	document_replaced.emit()
 	history_changed.emit()
 
 
 func _notify(command: Command) -> void:
+	revision += 1
 	var image_id: StringName = command.get_image_id()
 	var dirty: Rect2i = command.get_dirty_rect()
 	if image_id != &"":

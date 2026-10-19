@@ -231,30 +231,30 @@ Also delivered early: a minimal palette swatch grid (LMB = FG, RMB = BG) so M2 i
 ## M6 — File I/O & export (2 weeks)
 
 ### Infrastructure
-- [ ] `DocumentRepository` interface + `FileAccess`/`ZIPPacker` implementation + in-memory fake (§9.2 rule 4)
-- [ ] `ImageCodec` interface
+- [x] `DocumentRepository` interface + `ZipDocumentRepository` (atomic: temp file then move) + `MemoryDocumentRepository` fake (§9.2 rule 4)
+- [x] ~~`ImageCodec`~~ → `FileSink` interface (`DiskFileSink`, `MemoryFileSink`): exporters produce images/bytes, the sink reads/writes them
 
 ### Native format `.prism` (§9.6)
-- [ ] Writer: `ZIPPacker`, `document.json` (v1 schema) + `images/*.bin`
-- [ ] Reader: `ZIPReader` + `JSON.parse_string()`, field-by-field typed validation
-- [ ] Migration scaffold `infra/codecs/prism/migrations/`; clear error on unknown future version
-- [ ] Round-trip tests (save → load → identical model); malformed/truncated inputs return errors
+- [x] Writer: `ZIPPacker`, `document.json` (v1 schema) + `images/*.bin`
+- [x] Reader: `ZIPReader` + `JSON.parse_string()`, field-by-field typed validation
+- [x] Migration scaffold `infra/codecs/prism/migrations/`; clear error on unknown future version ("saved by a newer PRISM")
+- [x] Round-trip tests (save → load → identical model); malformed/truncated inputs return errors
 
 ### Autosave & recovery
-- [ ] Autosave to `user://autosave/` every N seconds on `WorkerThreadPool` using a document snapshot
-- [ ] Crash recovery prompt on startup
+- [x] Autosave to `user://autosave/` every 60 s (when there are unsaved changes) on `WorkerThreadPool` using a deep-copied snapshot
+- [x] Crash recovery prompt on startup (session lock file + autosave left behind = crash); unsaved-changes prompt on New/Open/Quit; `*` in the window title
 
 ### Import / export (§7.12)
-- [ ] Native file dialogs (`FileDialog.use_native_dialog = true`) with filters per format
-- [ ] PNG single frame import/export (RGBA); import maps colors to palette
-- [ ] PNG sequence export (`name_0001.png` …)
-- [ ] Sprite sheet + JSON: row, column, grid, tight packing; frames, durations, tags in JSON
-- [ ] Godot `SpriteFrames` `.tres` + `sheet.png`: one animation per tag, `AtlasTexture` regions, per-frame durations relative to base FPS, loop flag; target project folder chooser for `res://` paths
-- [ ] GIF encoder (LZW, global palette, per-frame delays, transparency index)
-- [ ] GIF / PNG-sequence cycling bake (LCM of periods, user cap, predicted frame-count warning) (Risk 5)
-- [ ] Export compositing (layers + visibility) shared by all exporters
+- [x] Native file dialogs (`FileDialog.use_native_dialog = true`) with filters per format
+- [x] PNG single frame import/export (RGBA); import maps colors to the nearest palette entry; "New from PNG" uses the image's own colors (≤ 255)
+- [x] PNG sequence export (`name_0001.png` …)
+- [x] Sprite sheet + JSON: row, column, grid, tight packing; frames, durations, tags in JSON
+- [x] Godot `SpriteFrames` `.tres` + `sheet.png`: one animation per tag (or "default"), `AtlasTexture` regions, speed = 1000 / shortest frame, per-frame durations relative to it, loop on; must be saved inside a Godot project (res:// path from the nearest `project.godot`)
+- [x] GIF encoder (LZW, global palette, per-frame delays without rounding drift, transparency index, loop forever); validated by an independent reader and by macOS `sips`
+- [x] GIF / PNG-sequence cycling bake (LCM of periods, 500-frame cap, predicted frame-count warning); GIF frames carry local color tables (Risk 5)
+- [x] Export compositing (layers, visibility, offsets, opacity) shared by all exporters: `FrameCompositor`; `FrameSchedule` gives play order + bake schedule
 
-**Exit:** round-trip tests pass; generated `SpriteFrames` opens in Godot 4.7 and every tag plays correctly on an `AnimatedSprite2D`.
+**Exit:** round-trip tests pass; generated `SpriteFrames` opens in Godot 4.7 and every tag plays correctly on an `AnimatedSprite2D`. ✅ `sprite_frames_godot_test.gd` exports into a scratch Godot project, imports it with a second Godot process and plays every tag at a fixed 60 fps; 316 tests, API coverage 100 %.
 
 ---
 
