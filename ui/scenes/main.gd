@@ -7,7 +7,7 @@ const NEW_SIZES: Array[Vector2i] = [Vector2i(16, 16), Vector2i(32, 32), Vector2i
 
 ## Menu name -> list of [label, action, icon] ("" action = separator, "-" = disabled placeholder).
 const MENUS: Array[Array] = [
-	["Project", [["New 16×16", "new_16", "new"], ["New 32×32", "new_32", "new"], ["New 64×64", "new_64", "new"], ["New 128×128", "new_128", "new"], ["New 256×256", "new_256", "new"], ["", "", ""], ["Open…", "prism_open", "folder"], ["Save", "prism_save", "save"], ["Save as…", "prism_save_as", "save"], ["", "", ""], ["Import PNG into cel…", "import_png", "preview"], ["New from PNG…", "new_from_png", "preview"], ["", "", ""], ["Export PNG (current frame)…", "export_png", ""], ["Export PNG sequence…", "export_sequence", ""], ["Export sprite sheet + JSON…", "export_sheet", ""], ["Export Godot SpriteFrames…", "export_sprite_frames", ""], ["Export GIF…", "export_gif", ""], ["", "", ""], ["Open demo: Waterfall (color cycling)", "demo_waterfall", "play"], ["", "", ""], ["Load palette…", "palette_load", "folder"], ["Save palette…", "palette_save", "save"], ["", "", ""], ["Preferences…", "preferences", ""], ["", "", ""], ["Quit", "quit", "close"]]],
+	["Project", [["New 16×16", "new_16", "new"], ["New 32×32", "new_32", "new"], ["New 64×64", "new_64", "new"], ["New 128×128", "new_128", "new"], ["New 256×256", "new_256", "new"], ["", "", ""], ["Open…", "prism_open", "folder"], ["Save", "prism_save", "save"], ["Save as…", "prism_save_as", "save"], ["", "", ""], ["Import PNG into cel…", "import_png", "preview"], ["New from PNG…", "new_from_png", "preview"], ["", "", ""], ["Export PNG (current frame)…", "export_png", ""], ["Export PNG sequence…", "export_sequence", ""], ["Export sprite sheet (all frames in one PNG + JSON)…", "export_sheet", ""], ["Export Godot SpriteFrames…", "export_sprite_frames", ""], ["Export GIF…", "export_gif", ""], ["", "", ""], ["Open demo: Waterfall (color cycling)", "demo_waterfall", "play"], ["", "", ""], ["Load palette…", "palette_load", "folder"], ["Save palette…", "palette_save", "save"], ["", "", ""], ["Preferences…", "preferences", ""], ["", "", ""], ["Quit", "quit", "close"]]],
 	["Edit", [["Undo", "prism_undo", "undo"], ["Redo", "prism_redo", "redo"], ["", "", ""], ["Cut", "prism_cut", "cut"], ["Copy", "prism_copy", "copy"], ["Paste", "prism_paste", "paste"], ["", "", ""], ["Select all", "prism_select_all", "select"], ["Deselect", "deselect", "close"]]],
 	["Picture", [["Palette: PRISM 32", "preset_default", ""], ["Palette: PICO-8 style 16", "preset_pico8", ""], ["Palette: EGA 16", "preset_ega", ""], ["Palette: Grayscale 16", "preset_gray", ""], ["", "", ""], ["Invert stencil", "stencil_invert", "lock"], ["Lock all except FG", "stencil_all_but_fg", "lock"], ["Clear stencil", "stencil_clear", "unlock"], ["", "", ""], ["Clear cel", "cel_clear", "trash"]]],
 	["Brush", [["Restore built-in", "prism_brush_restore", "brush"], ["Flip horizontal", "prism_brush_flip_h", "flip_h"], ["Flip vertical", "prism_brush_flip_v", "flip_v"], ["Rotate 90°", "prism_brush_rotate", "rotate"]]],
@@ -466,6 +466,10 @@ func _export_form(title_text: String, with_scope: bool, with_bake: bool, with_la
 	form.add_number("scale", "Scale", 1, 1, 8, "×")
 	if with_layout:
 		form.add_choice("layout", "Layout", LAYOUTS, ExportOptions.Layout.GRID)
+		form.add_number("columns", "Columns", 0, 0, 256, "  (0 = auto)")
+		form.add_number("rows", "Rows", 0, 0, 256, "  (0 = auto)")
+		form.add_number("margin", "Outer margin", 0, 0, 256, " px")
+		form.add_number("spacing", "Spacing", 0, 0, 256, " px between frames")
 	if with_bake and not EditorContext.bus.document.cycles.is_empty():
 		form.add_check("bake", "Bake color cycling", true)
 	Signals.on(form.submitted, func(values: Dictionary) -> void:
@@ -483,6 +487,10 @@ func _options(values: Dictionary) -> ExportOptions:
 	options.scale = values.get("scale", 1)
 	var layout: int = values.get("layout", ExportOptions.Layout.GRID)
 	options.layout = layout as ExportOptions.Layout
+	options.columns = values.get("columns", 0)
+	options.rows = values.get("rows", 0)
+	options.margin = values.get("margin", 0)
+	options.spacing = values.get("spacing", 0)
 	options.bake_cycles = values.get("bake", false)
 	return options
 

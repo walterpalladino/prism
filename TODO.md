@@ -248,7 +248,7 @@ Also delivered early: a minimal palette swatch grid (LMB = FG, RMB = BG) so M2 i
 - [x] Native file dialogs (`FileDialog.use_native_dialog = true`) with filters per format
 - [x] PNG single frame import/export (RGBA); import maps colors to the nearest palette entry; "New from PNG" uses the image's own colors (≤ 255)
 - [x] PNG sequence export (`name_0001.png` …)
-- [x] Sprite sheet + JSON: row, column, grid, tight packing; frames, durations, tags in JSON
+- [x] Sprite sheet + JSON: row, column, grid, tight packing; frames, durations, tags in JSON; choose columns × rows (0 = auto), outer margin and spacing between frames
 - [x] Godot `SpriteFrames` `.tres` + `sheet.png`: one animation per tag (or "default"), `AtlasTexture` regions, speed = 1000 / shortest frame, per-frame durations relative to it, loop on; must be saved inside a Godot project (res:// path from the nearest `project.godot`)
 - [x] GIF encoder (LZW, global palette, per-frame delays without rounding drift, transparency index, loop forever); validated by an independent reader and by macOS `sips`
 - [x] GIF / PNG-sequence cycling bake (LCM of periods, 500-frame cap, predicted frame-count warning); GIF frames carry local color tables (Risk 5)

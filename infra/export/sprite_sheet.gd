@@ -32,48 +32,54 @@ static func pack(doc: PrismDocument, options: ExportOptions) -> SpriteSheet:
 		sheet.frame_indices.append(f)
 	var cell: Vector2i = Vector2i(doc.width, doc.height) * options.scale
 	var count: int = images.size()
-	var columns: int = count
-	match options.layout:
-		ExportOptions.Layout.COLUMN:
-			columns = 1
-		ExportOptions.Layout.GRID:
-			columns = ceili(sqrt(float(count)))
-	if options.layout == ExportOptions.Layout.TIGHT:
-		sheet._pack_tight(images)
+	var layout: ExportOptions.Layout = effective_layout(options)
+	var margin: int = maxi(0, options.margin)
+	var spacing: int = maxi(0, options.spacing)
+	if layout == ExportOptions.Layout.TIGHT:
+		sheet._pack_tight(images, margin, spacing)
 		return sheet
-	var rows: int = ceili(count / float(columns))
-	sheet.image = Image.create_empty(columns * cell.x, rows * cell.y, false, Image.FORMAT_RGBA8)
+	var grid: Vector2i = Vector2i(count, 1)
+	match layout:
+		ExportOptions.Layout.COLUMN:
+			grid = Vector2i(1, count)
+		ExportOptions.Layout.GRID:
+			grid = grid_size(count, options.columns, options.rows)
+	var columns: int = grid.x
+	var rows: int = grid.y
+	var sheet_size: Vector2i = Vector2i(columns, rows) * cell + Vector2i(columns - 1, rows - 1) * spacing + Vector2i(margin, margin) * 2
+	sheet.image = Image.create_empty(sheet_size.x, sheet_size.y, false, Image.FORMAT_RGBA8)
 	for i: int in count:
-		var at: Vector2i = Vector2i(i % columns, floori(i / float(columns))) * cell
+		var at: Vector2i = Vector2i(margin, margin) + Vector2i(i % columns, floori(i / float(columns))) * (cell + Vector2i(spacing, spacing))
 		sheet.image.blit_rect(images[i], Rect2i(Vector2i.ZERO, images[i].get_size()), at)
 		sheet.rects.append(Rect2i(at, cell))
 	return sheet
 
 
-## Shelf packing of trimmed frames: rows of frames no wider than ~sqrt(total area).
-func _pack_tight(images: Array[Image]) -> void:
+## Shelf packing of trimmed frames: rows of frames no wider than ~sqrt(total area), with
+## `margin` around the sheet and `spacing` between frames.
+func _pack_tight(images: Array[Image], margin: int, spacing: int) -> void:
 	var area: int = 0
 	var widest: int = 1
 	for img: Image in images:
 		area += img.get_width() * img.get_height()
 		widest = maxi(widest, img.get_width())
 	var max_width: int = maxi(widest, ceili(sqrt(float(area)) * 1.2))
-	var x: int = 0
-	var y: int = 0
+	var x: int = margin
+	var y: int = margin
 	var row_height: int = 0
 	for img: Image in images:
-		if x > 0 and x + img.get_width() > max_width:
-			x = 0
-			y += row_height
+		if x > margin and x - margin + img.get_width() > max_width:
+			x = margin
+			y += row_height + spacing
 			row_height = 0
 		rects.append(Rect2i(x, y, img.get_width(), img.get_height()))
-		x += img.get_width()
+		x += img.get_width() + spacing
 		row_height = maxi(row_height, img.get_height())
 	var width: int = 1
 	var height: int = 1
 	for rect: Rect2i in rects:
-		width = maxi(width, rect.end.x)
-		height = maxi(height, rect.end.y)
+		width = maxi(width, rect.end.x + margin)
+		height = maxi(height, rect.end.y + margin)
 	image = Image.create_empty(width, height, false, Image.FORMAT_RGBA8)
 	for i: int in images.size():
 		image.blit_rect(images[i], Rect2i(Vector2i.ZERO, images[i].get_size()), rects[i].position)
@@ -112,7 +118,41 @@ func to_json(doc: PrismDocument, options: ExportOptions, image_name: String) -> 
 
 
 ## Writes `<path>.png` and `<path>.json`; returns "" or an error.
+## The layout actually used: asking for columns or rows means a grid.
+static func effective_layout(options: ExportOptions) -> ExportOptions.Layout:
+	if options.columns > 0 or options.rows > 0:
+		return ExportOptions.Layout.GRID
+	return options.layout
+
+
+## Columns x rows for `count` frames. 0 = automatic: both automatic gives a near-square grid;
+## with one given, the other is just enough to fit every frame. Both given are used as is
+## (check grid_error first); unused cells stay transparent.
+static func grid_size(count: int, columns: int, rows: int) -> Vector2i:
+	var n: int = maxi(count, 1)
+	if columns > 0 and rows > 0:
+		return Vector2i(columns, rows)
+	if columns > 0:
+		return Vector2i(columns, ceili(n / float(columns)))
+	if rows > 0:
+		return Vector2i(ceili(n / float(rows)), rows)
+	var auto_columns: int = ceili(sqrt(float(n)))
+	return Vector2i(auto_columns, ceili(n / float(auto_columns)))
+
+
+## "" if the requested grid holds every frame, else a message saying what is needed.
+static func grid_error(count: int, options: ExportOptions) -> String:
+	if effective_layout(options) != ExportOptions.Layout.GRID or options.columns <= 0 or options.rows <= 0:
+		return ""
+	if options.columns * options.rows >= count:
+		return ""
+	return "a %d × %d grid has %d cells but there are %d frames; use more columns or rows, or set one of them to 0 (automatic)" % [options.columns, options.rows, options.columns * options.rows, count]
+
+
 static func write(doc: PrismDocument, options: ExportOptions, sink: FileSink, path: String) -> String:
+	var invalid: String = grid_error(options.frame_range.y - options.frame_range.x + 1, options)
+	if invalid != "":
+		return invalid
 	var sheet: SpriteSheet = pack(doc, options)
 	var base: String = path.get_basename()
 	var error: String = sink.write_png(base + ".png", sheet.image)

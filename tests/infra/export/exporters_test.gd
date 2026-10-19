@@ -224,3 +224,86 @@ func test_png_to_document_uses_its_own_colors() -> void:
 	var huge: Image = Image.create_empty(600, 2, false, Image.FORMAT_RGBA8)
 	assert_str(PngImport.to_document(huge, PalettePresets.default_32()).error).contains("maximum canvas")
 	assert_object(PngImport.load_image(PackedByteArray([1, 2]))).is_null()
+
+
+func test_grid_size_rules() -> void:
+	assert_that(SpriteSheet.grid_size(10, 0, 0)).is_equal(Vector2i(4, 3))
+	assert_that(SpriteSheet.grid_size(10, 5, 0)).is_equal(Vector2i(5, 2))
+	assert_that(SpriteSheet.grid_size(10, 0, 3)).is_equal(Vector2i(4, 3))
+	assert_that(SpriteSheet.grid_size(10, 4, 4)).is_equal(Vector2i(4, 4))
+	assert_that(SpriteSheet.grid_size(1, 0, 0)).is_equal(Vector2i(1, 1))
+
+
+func test_sheet_with_chosen_columns_and_rows() -> void:
+	var doc: PrismDocument = _doc()
+	var options: ExportOptions = ExportOptions.whole(doc)
+	options.layout = ExportOptions.Layout.ROW
+	options.columns = 2
+	options.rows = 2
+	var sheet: SpriteSheet = SpriteSheet.pack(doc, options)
+	assert_that(sheet.image.get_size()).is_equal(Vector2i(24, 16))
+	assert_that(sheet.rects[2].position).is_equal(Vector2i(0, 8))
+	options.rows = 0
+	options.columns = 1
+	assert_that(SpriteSheet.pack(doc, options).image.get_size()).is_equal(Vector2i(12, 24))
+	options.columns = 0
+	options.rows = 1
+	assert_that(SpriteSheet.pack(doc, options).image.get_size()).is_equal(Vector2i(36, 8))
+
+
+func test_too_small_grid_is_refused() -> void:
+	var doc: PrismDocument = _doc()
+	var options: ExportOptions = ExportOptions.whole(doc)
+	options.columns = 1
+	options.rows = 2
+	var sink: MemoryFileSink = MemoryFileSink.new()
+	assert_str(SpriteSheet.write(doc, options, sink, "/s.png")).contains("1 × 2 grid has 2 cells but there are 3 frames")
+	assert_bool(sink.files.is_empty()).is_true()
+	options.rows = 3
+	assert_str(SpriteSheet.grid_error(3, options)).is_empty()
+	assert_str(SpriteSheet.write(doc, options, sink, "/s.png")).is_empty()
+	assert_that(sink.image("/s.png").get_size()).is_equal(Vector2i(12, 24))
+
+
+func test_grid_margin_and_spacing() -> void:
+	var doc: PrismDocument = _doc()
+	var options: ExportOptions = ExportOptions.whole(doc)
+	options.columns = 2
+	options.rows = 2
+	options.margin = 3
+	options.spacing = 2
+	var sheet: SpriteSheet = SpriteSheet.pack(doc, options)
+	# 2 cells of 12x8, one 2 px gap, 3 px margin on both sides.
+	assert_that(sheet.image.get_size()).is_equal(Vector2i(3 + 12 + 2 + 12 + 3, 3 + 8 + 2 + 8 + 3))
+	assert_array([sheet.rects[0].position, sheet.rects[1].position, sheet.rects[2].position]).is_equal([Vector2i(3, 3), Vector2i(17, 3), Vector2i(3, 13)])
+	assert_float(sheet.image.get_pixel(0, 0).a).is_equal(0.0)
+	assert_float(sheet.image.get_pixel(15, 5).a).is_equal(0.0)
+	var data: Dictionary = JSON.parse_string(sheet.to_json(doc, options, "s.png"))
+	var second: Dictionary = (data["frames"] as Array)[1]["frame"]
+	assert_array([int(second["x"]), int(second["y"])]).is_equal([17, 3])
+
+
+func test_row_and_tight_with_margin_and_spacing() -> void:
+	var doc: PrismDocument = _doc()
+	var options: ExportOptions = ExportOptions.whole(doc)
+	options.layout = ExportOptions.Layout.ROW
+	options.margin = 1
+	options.spacing = 4
+	var row: SpriteSheet = SpriteSheet.pack(doc, options)
+	assert_that(row.image.get_size()).is_equal(Vector2i(1 + 12 * 3 + 4 * 2 + 1, 1 + 8 + 1))
+	assert_that(row.rects[2].position).is_equal(Vector2i(1 + 2 * 16, 1))
+	options.layout = ExportOptions.Layout.TIGHT
+	var tight: SpriteSheet = SpriteSheet.pack(doc, options)
+	assert_that(tight.rects[0].position).is_equal(Vector2i(1, 1))
+	for i: int in range(1, tight.rects.size()):
+		var previous: Rect2i = tight.rects[i - 1]
+		var current: Rect2i = tight.rects[i]
+		if current.position.y == previous.position.y:
+			assert_int(current.position.x - previous.end.x).is_equal(4)
+	var last: Rect2i = tight.rects[tight.rects.size() - 1]
+	assert_bool(tight.image.get_width() >= last.end.x + 1 and tight.image.get_height() >= last.end.y + 1).is_true()
+
+
+func test_margin_and_spacing_default_to_zero() -> void:
+	var options: ExportOptions = ExportOptions.whole(_doc())
+	assert_array([options.margin, options.spacing]).is_equal([0, 0])

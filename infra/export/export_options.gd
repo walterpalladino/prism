@@ -12,6 +12,15 @@ var scale: int = 1
 var bake_cycles: bool = false
 var max_frames: int = FrameSchedule.DEFAULT_MAX_FRAMES
 var layout: Layout = Layout.GRID
+## Grid size for Layout.GRID; 0 = automatic. With only one set, the other follows from the
+## frame count. Setting either one implies the grid layout.
+var columns: int = 0
+var rows: int = 0
+## Sprite sheets: transparent pixels between the sheet border and the frames (outer margin),
+## and between neighboring frames horizontally and vertically (spacing). In output pixels,
+## i.e. not multiplied by `scale`.
+var margin: int = 0
+var spacing: int = 0
 
 
 ## All frames, forward.
