@@ -33,61 +33,63 @@ Section references like `§7.2` point to the GDD. Milestones follow the roadmap 
 - [x] Write `CLAUDE.md` with architecture rules (§9.2), typing rule (§6.2) and file-loading security rule (§9.6)
 
 ### Export presets
-- [ ] Create `export_presets.cfg`: Windows x86_64, macOS universal, Linux x86_64 (local builds; CI is deferred, see *Future: GitHub CI*)
+- [x] Create `export_presets.cfg`: Windows x86_64, macOS universal, Linux x86_64 (local builds; CI is deferred, see *Future: GitHub CI*)
 
 ### Spikes (each ends with an ADR in `docs/adr/`)
-- [ ] **Spike A — display:** R8 index texture + palette LUT shader, 4 layers, zoom/pan; measure `ImageTexture.update()` at 256², 512², 1024²; decide tile size (default 64×64)
-- [ ] **Spike B — input:** stroke latency with `Input.use_accumulated_input = false` + Bresenham interpolation
-- [ ] **Spike C — CPU hot paths:** GDScript flood fill on 512² (budget < 50 ms); LZW-encode 64 frames of 256² GIF; decide on GDExtension for `RasterBackend` / GIF encoder
-- [ ] **Spike D — coverage:** evaluate a GDScript coverage tool for 4.7; otherwise define a per-module test checklist
-- [ ] Validate Compatibility vs Forward+ renderer (Q3)
+- [x] **Spike A — display:** R8 index texture + palette LUT shader, 4 layers, zoom/pan; measure `ImageTexture.update()` at 256², 512², 1024²; decide tile size (default 64×64) → no tiling needed ≤ 512² ([ADR 0001](docs/adr/0001-display-pipeline.md))
+- [x] **Spike B — input:** stroke latency with `Input.use_accumulated_input = false` + Bresenham interpolation → CPU ≤ 0.7 ms/event; hand-check real latency in M2 ([ADR 0002](docs/adr/0002-stroke-input.md))
+- [x] **Spike C — CPU hot paths:** GDScript flood fill on 512² (budget < 50 ms); LZW-encode 64 frames of 256² GIF; decide on GDExtension for `RasterBackend` / GIF encoder → stay in GDScript ([ADR 0003](docs/adr/0003-cpu-hot-paths.md))
+- [x] **Spike D — coverage:** evaluate a GDScript coverage tool for 4.7; otherwise define a per-module test checklist → none usable; `tools/api_coverage.py` + checklist ([ADR 0004](docs/adr/0004-test-coverage.md))
+- [x] Validate Compatibility vs Forward+ renderer (Q3) → Compatibility ([ADR 0006](docs/adr/0006-renderer.md))
 
-**Exit:** all four spikes recorded as ADRs with go/no-go decisions; test suite runs green locally.
+**Exit:** all four spikes recorded as ADRs with go/no-go decisions; test suite runs green locally. ✅ Also: [ADR 0005](docs/adr/0005-packed-array-semantics.md) (packed arrays are shared by reference in 4.7).
+
+Also delivered early (needed by the spikes): `infra/render/palette_lut.gdshader` (M2) and `infra/codecs/gif/gif_lzw.gd` LZW encoder (M6).
 
 ---
 
 ## M1 — Core model & raster ops (2 weeks)
 
 ### Model (`core/model/`) (§6)
-- [ ] `PrismEnums` — `ColorMode`, `TagDirection`, `DrawMode`
-- [ ] `IndexedImage` — id, width, height, `pixels: PackedByteArray`, `get_index` / `set_index`, `clone()`
-- [ ] `Palette` — `PackedColorArray` (≤ 256), get/set color, ramps (list of `Vector2i` spans), ramp lookup for an index
-- [ ] `Layer` — id, name, visible, locked, opacity
-- [ ] `Frame` — id, `duration_ms`
-- [ ] `Cel` — layer_id, frame_id, image_id, offset (shared `image_id` = linked cel)
-- [ ] `Tag` — name, from/to frame, direction, color
-- [ ] `CycleRange` — start/end index, `rate_hz`, step (±1), active
-- [ ] `Stencil` — 256-byte lock table, `is_locked`, `set_locked`, `invert`, `lock_all_except(index)`
-- [ ] `Brush` — `IndexedImage` + anchor; built-in square/round 1–8 px factory
-- [ ] `PrismDocument` — all fields from §6.2; factory `PrismDocument.create(w, h, palette)` with one layer + one frame
-- [ ] ID generator for layers/frames/images (deterministic in tests)
-- [ ] Validation for all invariants in §6.3 (pixel count, index range, non-overlapping cycles, cel references exist) returning error lists, not crashing
+- [x] `PrismEnums` — `ColorMode`, `TagDirection`, `DrawMode`
+- [x] `IndexedImage` — id, width, height, `pixels: PackedByteArray`, `get_index` / `set_index`, `duplicate_image()`
+- [x] `Palette` — `PackedColorArray` (≤ 256), get/set color, ramps (list of `Vector2i` spans), ramp lookup for an index
+- [x] `Layer` — id, `layer_name`, visible, locked, opacity
+- [x] `Frame` — id, `duration_ms`
+- [x] `Cel` — layer_id, frame_id, image_id, offset (shared `image_id` = linked cel)
+- [x] `Tag` — name, from/to frame, direction, color
+- [x] `CycleRange` — start/end index, `rate_hz`, step (±1), active
+- [x] `Stencil` — 256-byte lock table, `is_locked`, `set_locked`, `invert`, `lock_all_except(index)`
+- [x] `Brush` — `IndexedImage` + anchor; built-in square/round 1–8 px factory
+- [x] `PrismDocument` — all fields from §6.2; factory `PrismDocument.create(w, h, palette)` with one layer + one frame
+- [x] ID generator for layers/frames/images (deterministic in tests)
+- [x] Validation for all invariants in §6.3 (pixel count, index range, non-overlapping cycles, cel references exist) returning error lists, not crashing
 
 ### Raster ops (`core/raster/RasterOps`, static functions)
-- [ ] Stencil-aware single write function used by every op (§6.3, §7.3)
-- [ ] Put pixel, `read_rect` / `write_rect` (used by `PixelPatch`)
-- [ ] Bresenham line (+ constrained angles: 0/45/90°, 1:2, 2:1)
-- [ ] Rectangle outline / filled
-- [ ] Midpoint ellipse outline / filled, symmetric pixels
-- [ ] Scanline flood fill (4-way contiguous) and global replace
-- [ ] Blit with transparent-index skip (brush stamping)
-- [ ] Flip H / V, rotate 90°
-- [ ] Pixel-perfect filter (remove L-shaped corners from a point sequence)
-- [ ] Brush stamping along a path (brush shape at each point)
-- [ ] `RasterBackend` interface + GDScript implementation (GDExtension-ready) (§9.2 rule 5)
+- [x] Stencil-aware single write function used by every op (§6.3, §7.3)
+- [x] Put pixel, `read_rect` / `write_rect` (used by `PixelPatch`)
+- [x] Bresenham line (+ constrained angles: 0/45/90°, 1:2, 2:1)
+- [x] Rectangle outline / filled
+- [x] Midpoint ellipse outline / filled, symmetric pixels
+- [x] Scanline flood fill (4-way contiguous) and global replace (512² noise worst case 49.7 ms)
+- [x] Blit with transparent-index skip (brush stamping)
+- [x] Flip H / V, rotate 90°
+- [x] Pixel-perfect filter (remove L-shaped corners from a point sequence)
+- [x] Brush stamping along a path (brush shape at each point)
+- [x] `RasterBackend` interface + GDScript implementation (GDExtension-ready) (§9.2 rule 5)
 
 ### Drawing modes (`core/modes/`)
-- [ ] Mode interface: `(dest_index, brush_index, button) -> new_index` or skip
-- [ ] **Color** — solid FG/BG, custom brush as mask
-- [ ] **Replace** — copy brush pixels, skip brush transparent index
-- [ ] **Shade** — ±1 within the ramp containing the destination; clamp by default, wrap option (Q1)
+- [x] Mode interface `Ink.apply(dest, brush_value, brush_is_mask, ctx) -> new index or SKIP`; `Painter` applies brush + ink + stencil, each pixel at most once per stroke
+- [x] **Color** — solid FG/BG, custom brush as mask
+- [x] **Replace** — copy brush pixels, skip brush transparent index
+- [x] **Shade** — ±1 within the ramp containing the destination; clamp by default, wrap option (Q1)
 
 ### Tests
-- [ ] gdUnit4 tests for every public function in `core/`
-- [ ] Golden-buffer tests for each primitive (`tests/golden/*.bin`)
-- [ ] Seeded property tests: random ops → invariants hold
+- [x] gdUnit4 tests for every public function in `core/`
+- [x] Golden tests for each primitive (text files in `tests/golden/`, reviewable in diffs)
+- [x] Seeded property tests: random ops → invariants hold
 
-**Exit:** every public `core/` function tested; golden tests for all primitives.
+**Exit:** every public `core/` function tested; golden tests for all primitives. ✅ 92 tests, API coverage 100 %.
 
 ---
 
@@ -308,7 +310,7 @@ Not part of the prototype milestones; set up once the repository is on GitHub. U
 
 ## Open questions to resolve (§12)
 
-- [ ] Q1 — Shade mode at ramp ends: clamp (default) or wrap?
+- [ ] Q1 — Shade mode at ramp ends: clamp (default) or wrap? (both implemented: `InkContext.shade_wrap`; default still to confirm)
 - [ ] Q2 — `.aseprite` import worth the licensing review pre-1.0?
-- [ ] Q3 — Compatibility vs Forward+ as shipped default (decide in M0)
+- [x] Q3 — Compatibility vs Forward+ as shipped default → Compatibility (ADR 0006)
 - [ ] Q4 — Fixed layout vs dockable panels (fixed for prototype)

@@ -19,7 +19,8 @@ These GDScript warnings are set to **Error** in `project.godot`:
 - No `Variant` in function signatures.
 - Use typed arrays and typed dictionaries (`Array[Layer]`, `Dictionary[Vector2i, Cel]`).
 - Type loop variables: `for layer: Layer in doc.layers:`.
-- When a return value is intentionally unused, assign it (`var err: int = ...`) and check it.
+- When a return value is intentionally unused, assign it (`var err: int = ...`) and check it, or put
+  `@warning_ignore("return_value_discarded")` on the line before (needed for `Packed*Array.append()`, which returns a bool).
 - `res://addons/` is excluded from warnings via `debug/gdscript/warnings/directory_rules`.
 
 ## Architecture rules (GDD §9.2)
@@ -33,6 +34,15 @@ These GDScript warnings are set to **Error** in `project.godot`:
 5. Every hot loop sits behind a GDExtension-ready interface (`RasterBackend`) with a GDScript implementation first.
 6. Every document mutation is a `Command` (`app/commands/`) with `apply` / `revert`; Godot's `UndoRedo` is not used.
 
+## GDScript facts that matter here (see docs/adr/)
+
+- Packed arrays are **shared by reference** on assignment and argument passing in 4.7 (ADR 0005).
+  Aliasing `image.pixels` in a hot loop is fine; call `duplicate()` whenever an independent copy is needed.
+- In hot loops, typed `for i: int in range(a, b)` beats `while`; avoid allocating arrays per iteration;
+  inline small helpers (ADR 0003). Re-run `bench/cpu_bench.gd` after touching raster code.
+- After adding or renaming a `class_name`, refresh the global class cache before running tests:
+  `godot --headless --path . --import`.
+
 ## Layout
 
 ```
@@ -42,8 +52,9 @@ app/     commands, history, tools, playback, input
 infra/   rendering (CanvasView, shaders), codecs, storage
 ui/      scenes and themes
 tests/   gdUnit4 suites mirroring the folders above; tests/golden/ holds expected outputs
-tools/   offline scripts (Godot ignores this folder)
-docs/    GDD, ADRs (Godot ignores this folder)
+bench/   benchmark scripts (excluded from exports)
+tools/   offline scripts, e.g. api_coverage.py (Godot ignores this folder)
+docs/    GDD, ADRs in docs/adr/ (Godot ignores this folder)
 ```
 
 ## Security
@@ -62,6 +73,9 @@ Reimplement behavior from public manuals and documentation.
 - Test files are named `*_test.gd`, extend `GdUnitTestSuite`, and start with
   `@warning_ignore_start("return_value_discarded")` because gdUnit4's fluent asserts return a value.
 - Every public function in `core/` and every command/tool in `app/` needs tests.
+  `python3 tools/api_coverage.py` lists public functions no test calls; keep it at 100 % (ADR 0004).
+- Golden files live in `tests/golden/` as text (one hex digit per pixel). Regenerate with
+  `PRISM_UPDATE_GOLDEN=1` and review the diff by eye before committing.
 - Run all tests headless:
 
   ```sh
@@ -69,3 +83,11 @@ Reimplement behavior from public manuals and documentation.
   ```
 
   Rendering tests need a real renderer and cannot run with `--headless`.
+
+## Benchmarks
+
+```sh
+godot --headless --path . -s res://bench/cpu_bench.gd      # flood fill, undo patches, strokes, GIF LZW
+godot --path . -s res://bench/display_bench.gd             # texture uploads, frame times (opens a window)
+godot --path . -s res://bench/lut_check.gd                 # palette shader correctness (opens a window)
+```

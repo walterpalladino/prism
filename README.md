@@ -26,3 +26,22 @@ GODOT_BIN=/path/to/Godot addons/gdUnit4/runtest.sh --headless --ignoreHeadlessMo
 ```
 
 Reports are written to `reports/` (git-ignored).
+
+```sh
+python3 tools/api_coverage.py                                # public functions not called by any test
+PRISM_UPDATE_GOLDEN=1 GODOT_BIN=... addons/gdUnit4/runtest.sh ...   # regenerate golden files
+```
+
+## Benchmarks
+
+See `bench/` and the measurements in [docs/adr/](docs/adr/README.md).
+
+```sh
+godot --headless --path . -s res://bench/cpu_bench.gd
+godot --path . -s res://bench/display_bench.gd
+```
+
+## Exporting
+
+`export_presets.cfg` defines Windows x86_64, macOS universal and Linux x86_64. Install the Godot 4.7.2
+export templates first (Editor → Manage Export Templates).
