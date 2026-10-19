@@ -2,18 +2,18 @@
 class_name Toolbox
 extends VBoxContainer
 
-## [tool id, button label, tooltip]
+## [tool id, icon name, tooltip]
 const TOOLS: Array[Array] = [
-	["pencil", "Pen", "Pencil (D)"],
-	["eraser", "Era", "Eraser (E)"],
-	["line", "Lin", "Line (L) — Shift constrains angle"],
-	["rect", "Rct", "Rectangle (R, Shift+R filled) — Shift draws a square"],
-	["ellipse", "Ell", "Ellipse (O, Shift+O filled) — Shift draws a circle"],
-	["fill", "Fil", "Fill (F contiguous, Shift+F global)"],
-	["picker", "Pck", "Picker (I, or hold Alt) — LMB FG, RMB BG"],
-	["select", "Sel", "Rect select (M) — Ctrl+C/X/V, arrows nudge"],
-	["move", "Mov", "Move cel (V)"],
-	["brush_pickup", "Brs", "Brush pickup (B) — Shift+B restores the built-in brush"],
+	["pencil", "pencil", "Pencil (D)"],
+	["eraser", "eraser", "Eraser (E)"],
+	["line", "line", "Line (L) — Shift constrains angle"],
+	["rect", "rect", "Rectangle (R, Shift+R filled) — Shift draws a square"],
+	["ellipse", "ellipse", "Ellipse (O, Shift+O filled) — Shift draws a circle"],
+	["fill", "fill", "Fill (F contiguous, Shift+F global)"],
+	["picker", "picker", "Picker (I, or hold Alt) — LMB FG, RMB BG"],
+	["select", "select", "Rect select (M) — Ctrl+C/X/V, arrows nudge"],
+	["move", "move", "Move cel (V)"],
+	["brush_pickup", "brush", "Brush pickup (B) — Shift+B restores the built-in brush"],
 ]
 
 var _tools: ToolController
@@ -28,16 +28,17 @@ func setup(tools: ToolController, state: EditorState) -> void:
 	var group: ButtonGroup = ButtonGroup.new()
 	for entry: Array in TOOLS:
 		var id_text: String = entry[0]
-		var label: String = entry[1]
+		var icon_name: String = entry[1]
 		var tooltip: String = entry[2]
 		var id: StringName = StringName(id_text)
 		var button: Button = Button.new()
-		button.text = label
+		button.icon = PrismIcons.get_icon(icon_name)
+		button.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		button.tooltip_text = tooltip
 		button.toggle_mode = true
 		button.button_group = group
 		button.focus_mode = Control.FOCUS_NONE
-		button.custom_minimum_size = Vector2(38, 30)
+		button.custom_minimum_size = Vector2(38, 36)
 		Signals.on(button.pressed, func() -> void: _tools.activate(id))
 		grid.add_child(button)
 		_buttons[id] = button

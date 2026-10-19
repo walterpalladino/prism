@@ -136,7 +136,7 @@ Also delivered early (needed by the spikes): `infra/render/palette_lut.gdshader`
 
 ### Shell UI
 - [x] `main.tscn` layout matching C1: menu bar, canvas, right toolbox, side panel, timeline dock (placeholder until M4), status bar (§8.1). Panels are `class_name` scripts in `ui/panels/` built in code
-- [x] Toolbox (2-column icon grid + FG/BG swatches)
+- [x] Toolbox (2-column icon grid + FG/BG swatches) — Pixelarticons icons (MIT) + 3 project-drawn (line, fill, rotate); menu items have icons too
 - [x] Status bar: cursor pos, index + hex under cursor, zoom, tool, frame
 - [x] `InputMap` actions for all default keys (§8.3)
 - [x] Prism dark `Theme` (`#1b1c23`, `#262833`, accents `#3d7bff` / `#ff8a3d`) (§8.2), built in `ui/theme/prism_theme.gd`

@@ -65,6 +65,14 @@ tools/   offline scripts, e.g. api_coverage.py (Godot ignores this folder)
 docs/    GDD, ADRs in docs/adr/ (Godot ignores this folder)
 ```
 
+## Icons
+
+- UI icons live in `ui/icons/` as white 24×24 SVGs, loaded with `PrismIcons.get_icon(name)` and tinted by the theme.
+- Source: Pixelarticons 2.4.2 (MIT, credited in `CREDITS.md`). Need a new one? Add it to `VENDORED` in
+  `tools/gen_icons.py` and run it with `--vendor <pixelarticons>/svg`. If the pack lacks it, draw it as a 12×12
+  cell grid in `ICONS` there, keeping the Pixelarticons look.
+- Never add icons or art from another source without recording its license in `CREDITS.md`.
+
 ## Security
 
 Never load project or user files with `str_to_var()`, `bytes_to_var_with_objects()` or `ResourceLoader`.

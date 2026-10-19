@@ -23,6 +23,13 @@ static func build_dark() -> Theme:
 	theme.set_color("font_pressed_color", "Button", BG)
 	theme.set_color("font_hover_pressed_color", "Button", BG)
 	theme.set_color("font_disabled_color", "PopupMenu", DIM)
+	# Icons are white SVGs; buttons tint them per state.
+	theme.set_color("icon_normal_color", "Button", TEXT)
+	theme.set_color("icon_hover_color", "Button", Color.WHITE)
+	theme.set_color("icon_focus_color", "Button", TEXT)
+	theme.set_color("icon_pressed_color", "Button", BG)
+	theme.set_color("icon_hover_pressed_color", "Button", BG)
+	theme.set_color("icon_disabled_color", "Button", DIM)
 	theme.set_stylebox("panel", "PanelContainer", _box(PANEL, BORDER, 0))
 	theme.set_stylebox("panel", "Panel", _box(PANEL, BORDER, 0))
 	theme.set_stylebox("panel", "PopupMenu", _box(PANEL_2, BORDER, 1))

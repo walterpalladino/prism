@@ -5,16 +5,16 @@ extends Control
 
 const NEW_SIZES: Array[Vector2i] = [Vector2i(16, 16), Vector2i(32, 32), Vector2i(64, 64), Vector2i(128, 128), Vector2i(256, 256)]
 
-## Menu name -> list of [label, action] ("" action = separator, "-" = disabled placeholder).
+## Menu name -> list of [label, action, icon] ("" action = separator, "-" = disabled placeholder).
 const MENUS: Array[Array] = [
-	["Project", [["New 16×16", "new_16"], ["New 32×32", "new_32"], ["New 64×64", "new_64"], ["New 128×128", "new_128"], ["New 256×256", "new_256"], ["", ""], ["Quit", "quit"]]],
-	["Edit", [["Undo", "prism_undo"], ["Redo", "prism_redo"], ["", ""], ["Cut", "prism_cut"], ["Copy", "prism_copy"], ["Paste", "prism_paste"], ["", ""], ["Deselect", "deselect"]]],
-	["Picture", [["Coming in M3–M6", "-"]]],
-	["Brush", [["Restore built-in", "prism_brush_restore"], ["Flip horizontal", "prism_brush_flip_h"], ["Flip vertical", "prism_brush_flip_v"], ["Rotate 90°", "prism_brush_rotate"]]],
-	["Mode", [["Color", "mode_color"], ["Replace", "mode_replace"], ["Shade", "mode_shade"]]],
-	["Anim", [["Coming in M4–M5", "-"]]],
-	["Effect", [["Coming later", "-"]]],
-	["View", [["Zoom in", "prism_zoom_in"], ["Zoom out", "prism_zoom_out"], ["Zoom 1:1", "prism_zoom_reset"], ["Fit", "fit"], ["", ""], ["Pixel grid", "prism_toggle_grid"], ["Tile grid: off / 8 / 16 / 32", "tile_grid"], ["Timeline", "prism_toggle_timeline"], ["", ""], ["Preview window", "preview"], ["Preview 1×", "preview_1"], ["Preview 2×", "preview_2"]]],
+	["Project", [["New 16×16", "new_16", "new"], ["New 32×32", "new_32", "new"], ["New 64×64", "new_64", "new"], ["New 128×128", "new_128", "new"], ["New 256×256", "new_256", "new"], ["", "", ""], ["Quit", "quit", "close"]]],
+	["Edit", [["Undo", "prism_undo", "undo"], ["Redo", "prism_redo", "redo"], ["", "", ""], ["Cut", "prism_cut", "cut"], ["Copy", "prism_copy", "copy"], ["Paste", "prism_paste", "paste"], ["", "", ""], ["Deselect", "deselect", "close"]]],
+	["Picture", [["Coming in M3–M6", "-", ""]]],
+	["Brush", [["Restore built-in", "prism_brush_restore", "brush"], ["Flip horizontal", "prism_brush_flip_h", "flip_h"], ["Flip vertical", "prism_brush_flip_v", "flip_v"], ["Rotate 90°", "prism_brush_rotate", "rotate"]]],
+	["Mode", [["Color", "mode_color", ""], ["Replace", "mode_replace", ""], ["Shade", "mode_shade", ""]]],
+	["Anim", [["Coming in M4–M5", "-", ""]]],
+	["Effect", [["Coming later", "-", ""]]],
+	["View", [["Zoom in", "prism_zoom_in", "zoom_in"], ["Zoom out", "prism_zoom_out", "zoom_out"], ["Zoom 1:1", "prism_zoom_reset", ""], ["Fit", "fit", ""], ["", "", ""], ["Pixel grid", "prism_toggle_grid", "grid"], ["Tile grid: off / 8 / 16 / 32", "tile_grid", "grid"], ["Timeline", "prism_toggle_timeline", "play"], ["", "", ""], ["Preview window", "preview", "preview"], ["Preview 1×", "preview_1", ""], ["Preview 2×", "preview_2", ""]]],
 ]
 
 var canvas: CanvasView
@@ -198,8 +198,12 @@ func _build_menu_bar() -> MenuBar:
 		for item: Array in items:
 			var label: String = item[0]
 			var action: String = item[1]
+			var icon_name: String = item[2]
 			if action == "":
 				popup.add_separator()
+			elif icon_name != "":
+				popup.add_icon_item(PrismIcons.get_icon(icon_name), label)
+				popup.set_item_icon_modulate(popup.item_count - 1, PrismTheme.TEXT)
 			else:
 				popup.add_item(label)
 				if action == "-":
