@@ -176,31 +176,31 @@ Also delivered early: a minimal palette swatch grid (LMB = FG, RMB = BG) so M2 i
 ## M4 — Layers, frames, timeline (3 weeks)
 
 ### Layers (§7.7)
-- [ ] Layers panel: add, delete, duplicate, rename, drag-reorder
-- [ ] Visibility, lock, display opacity
-- [ ] All layer ops as commands
+- [x] Layers panel: add, delete, duplicate, rename (double-click), drag-reorder — the timeline's left column (Aseprite-style) plus toolbar, Anim menu and context menu
+- [x] Visibility (eye), lock, display opacity (context menu → Layer opacity…)
+- [x] All layer/frame/cel/tag ops are commands: `StructureCommand` stores before/after `DocumentStructure` snapshots
 
 ### Frames & cels (§7.8)
-- [ ] Frame ops: insert empty, duplicate (deep / linked), delete, drag-reorder
-- [ ] Set duration (ms) for one or many frames
-- [ ] Cel ops: link / unlink (copy-on-write clone), clear, copy/paste across frames
-- [ ] Linked-cel edits mutate the shared image; property tests for link + undo correctness (Risk 4)
+- [x] Frame ops: insert empty, duplicate (deep / linked), delete, drag-reorder (drag a frame number)
+- [x] Set duration (ms) for one or many frames (double-click the ms row; new frames inherit the duration)
+- [x] Cel ops: link / unlink (clone), clear, copy/paste across frames. Every layer×frame slot always has a cel; "empty" = all transparent
+- [x] Linked-cel edits mutate the shared image; property test: random timeline ops + strokes, undo-all = original, redo-all = final (Risk 4)
 
 ### Timeline UI
-- [ ] Single custom `Control` drawing the whole cel grid in `_draw()` (§9.4.7)
-- [ ] Duration row, empty-cel (○) and linked-cel markers, playhead (C2)
-- [ ] Click cel to edit; frame/cel multi-selection
-- [ ] Collapsible dock `Ctrl+T`
-- [ ] Keys: `,` / `.` prev/next frame, `Enter` play/stop, `Alt+N` new frame, `Alt+D` duplicate
+- [x] Single custom `Control` drawing the whole cel grid in `_draw()` (§9.4.7)
+- [x] Duration row, empty-cel (○) and linked-cel markers, playhead (C2)
+- [x] Click cel to edit; Shift+click / drag selects a frame range
+- [x] Collapsible dock `Ctrl+T`
+- [x] Keys: `,` / `.` prev/next frame, `Enter` play/stop, `Alt+N` new frame, `Alt+D` duplicate
 
 ### Tags
-- [ ] Create tag from frame selection; edit name / color / direction
-- [ ] Tag bars drawn above the grid
+- [x] Create tag from frame selection; edit name / color / direction
+- [x] Tag bars drawn above the grid
 
 ### Playback (`app/playback/`)
-- [ ] Playback engine driven by accumulated `delta` in `_process`, independent of render rate
-- [ ] Forward / reverse / ping-pong; loop active tag or whole timeline
-- [ ] Preview window plays independently
+- [x] Playback engine driven by accumulated `delta` in `_process`, independent of render rate
+- [x] Forward / reverse / ping-pong; loop active tag or whole timeline
+- [x] Preview window plays independently (own `Playback`, play button and 1×/2× toggle)
 
 **Exit:** 8-frame, 3-layer walk cycle with two tags plays at correct durations (±2 ms drift over 10 s).
 

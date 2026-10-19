@@ -83,3 +83,32 @@ func test_selection_and_pickup_rects() -> void:
 	assert_that(fx.state.selection).is_equal(Rect2i(1, 1, 2, 2))
 	assert_that(fx.state.pickup_rect).is_equal(Rect2i(0, 0, 1, 1))
 	assert_int(fx.state.palette_size()).is_equal(32)
+
+
+func test_frame_navigation_and_selection() -> void:
+	var fx: AppFixture = AppFixture.new()
+	fx.timeline.insert_frame(1)
+	fx.timeline.insert_frame(2)
+	var shown: Array[int] = []
+	Signals.on(fx.state.frame_changed, func(i: int) -> void: shown.append(i))
+	fx.state.set_frame(0)
+	fx.state.set_frame_range(2, 1)
+	assert_that(fx.state.frame_range).is_equal(Vector2i(1, 2))
+	fx.state.show_frame(1)
+	assert_int(fx.state.frame_index).is_equal(1)
+	assert_that(fx.state.frame_range).is_equal(Vector2i(1, 2))
+	fx.state.set_frame(9)
+	assert_int(fx.state.frame_index).is_equal(2)
+	assert_that(fx.state.frame_range).is_equal(Vector2i(2, 2))
+	assert_array(shown).is_equal([0, 1, 2])
+
+
+func test_clamp_to_document() -> void:
+	var fx: AppFixture = AppFixture.new()
+	fx.state.frame_index = 5
+	fx.state.layer_index = 3
+	fx.state.frame_range = Vector2i(4, 6)
+	fx.state.clamp_to_document()
+	assert_int(fx.state.frame_index).is_equal(0)
+	assert_int(fx.state.layer_index).is_equal(0)
+	assert_that(fx.state.frame_range).is_equal(Vector2i.ZERO)

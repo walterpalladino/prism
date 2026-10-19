@@ -2,6 +2,7 @@
 ## Events are pushed into the scene's viewport, so they go through Godot's GUI routing and
 ## hit-testing. Godot's headless display server does not route mouse input to the GUI, so
 ## these tests skip under --headless; run them with a window (see CLAUDE.md, "Tests").
+## Keep the real mouse off the test window while they run: OS mouse events reach it too.
 extends GdUnitTestSuite
 @warning_ignore_start("return_value_discarded")  # gdUnit4 fluent asserts return self
 
@@ -11,7 +12,10 @@ var _mouse: Vector2 = Vector2.ZERO
 
 
 func before_test() -> void:
+	# Other suites share the EditorContext autoload: reset what affects painting.
 	EditorContext.new_document(Vector2i(64, 64))
+	EditorContext.state.set_draw_mode(PrismEnums.DrawMode.COLOR)
+	EditorContext.state.pixel_perfect = true
 	EditorContext.tools.activate(&"pencil")
 	EditorContext.state.set_builtin_brush(Brush.Shape.SQUARE, 1)
 	EditorContext.state.set_fg(9)

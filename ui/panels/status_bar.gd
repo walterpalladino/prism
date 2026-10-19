@@ -32,6 +32,7 @@ func setup(state: EditorState, tools: ToolController, canvas: CanvasView) -> voi
 	Signals.on(canvas.zoom_changed, _on_zoom_changed)
 	_zoom = canvas.zoom
 	Signals.on(state.changed, _refresh)
+	Signals.on(state.frame_changed, func(_index: int) -> void: _refresh())
 	Signals.on(tools.tool_changed, func(_id: StringName) -> void: _refresh())
 	Signals.on(state.bus.document_changed, func(_dirty: Rect2i) -> void: _refresh())
 	_refresh()
@@ -64,7 +65,7 @@ func _refresh() -> void:
 	var tool_name: String = TOOL_NAMES.get(tool_id, String(tool_id))
 	if tool_id == &"pencil" and _state.pixel_perfect:
 		tool_name += " (pixel-perfect)"
-	parts.append_array(["zoom %d%%" % (_zoom * 100), tool_name, "frame %d/%d" % [_state.frame_index + 1, doc.frames.size()]])
+	parts.append_array(["zoom %d%%" % (_zoom * 100), tool_name, "frame %d/%d" % [_state.frame_index + 1, doc.frames.size()], "layer %s" % doc.layers[clampi(_state.layer_index, 0, doc.layers.size() - 1)].layer_name])
 	_info.text = "  ·  ".join(parts)
 	var mode_name: String = SidePanel.MODE_NAMES[_state.draw_mode]
 	_mode.text = "Mode: " + mode_name

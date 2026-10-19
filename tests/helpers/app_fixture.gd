@@ -10,6 +10,8 @@ var state: EditorState
 var controller: ToolController
 var selection: SelectionActions
 var palette: PaletteActions
+var timeline: TimelineActions
+var playback: Playback
 
 
 func _init(width: int = 8, height: int = 8) -> void:
@@ -28,10 +30,16 @@ func _init(width: int = 8, height: int = 8) -> void:
 	controller.register(BrushPickupTool.new(bus, state))
 	selection = SelectionActions.new(bus, state)
 	palette = PaletteActions.new(bus, state)
+	timeline = TimelineActions.new(bus, state)
+	playback = Playback.new(bus)
 
 
 func image() -> IndexedImage:
 	return bus.document.get_cel_image(0, 0)
+
+
+func image_at(layer: int, frame: int) -> IndexedImage:
+	return bus.document.get_cel_image(layer, frame)
 
 
 func rows() -> PackedStringArray:

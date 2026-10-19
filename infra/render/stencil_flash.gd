@@ -17,8 +17,14 @@ func flash(canvas_pixels: PackedVector2Array) -> void:
 	queue_redraw()
 
 
+## True while any flash is still fading (time-based, so it does not depend on redraws).
 func is_flashing() -> bool:
-	return not _batches.is_empty()
+	var now: float = Time.get_ticks_msec() / 1000.0
+	for batch: Array in _batches:
+		var started: float = batch[0]
+		if now - started < FLASH_SECONDS:
+			return true
+	return false
 
 
 func _process(_delta: float) -> void:

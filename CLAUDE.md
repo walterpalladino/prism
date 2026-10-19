@@ -115,3 +115,10 @@ godot --headless --path . -s res://bench/cpu_bench.gd      # flood fill, undo pa
 godot --path . -s res://bench/display_bench.gd             # texture uploads, frame times (opens a window)
 godot --path . -s res://bench/lut_check.gd                 # palette shader correctness (opens a window)
 ```
+
+## Known engine quirks (Godot 4.7.2, Compatibility renderer, macOS)
+
+- Drawing several *different* textures from one CanvasItem's `_draw()` can render some of them as solid
+  rectangles. Custom-drawn controls must draw icons from `PrismIcons.atlas()` with
+  `draw_texture_rect_region(PrismIcons.atlas(), rect, PrismIcons.atlas_region(name), color)`.
+  Nodes that show one texture each (Button, TextureRect, Sprite2D) are not affected.

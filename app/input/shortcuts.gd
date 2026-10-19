@@ -10,6 +10,7 @@ extends RefCounted
 
 const SHIFT: int = 1
 const CTRL: int = 2
+const ALT: int = 4
 
 ## action name -> list of [keycode, modifier mask].
 const DEFAULTS: Dictionary[StringName, Array] = {
@@ -46,6 +47,11 @@ const DEFAULTS: Dictionary[StringName, Array] = {
 	&"prism_cancel": [[KEY_ESCAPE, 0]],
 	&"prism_toggle_timeline": [[KEY_T, CTRL]],
 	&"prism_toggle_stencil": [[KEY_QUOTELEFT, SHIFT], [KEY_ASCIITILDE, 0], [KEY_ASCIITILDE, SHIFT]],
+	&"prism_frame_prev": [[KEY_COMMA, 0]],
+	&"prism_frame_next": [[KEY_PERIOD, 0]],
+	&"prism_play": [[KEY_ENTER, 0], [KEY_KP_ENTER, 0]],
+	&"prism_frame_new": [[KEY_N, ALT]],
+	&"prism_frame_duplicate": [[KEY_D, ALT]],
 	&"prism_nudge_left": [[KEY_LEFT, 0]],
 	&"prism_nudge_right": [[KEY_RIGHT, 0]],
 	&"prism_nudge_up": [[KEY_UP, 0]],
@@ -56,7 +62,7 @@ const DEFAULTS: Dictionary[StringName, Array] = {
 const REPEATING: Array[StringName] = [
 	&"prism_fg_prev", &"prism_fg_next", &"prism_bg_prev", &"prism_bg_next",
 	&"prism_nudge_left", &"prism_nudge_right", &"prism_nudge_up", &"prism_nudge_down",
-	&"prism_undo", &"prism_redo",
+	&"prism_undo", &"prism_redo", &"prism_frame_prev", &"prism_frame_next",
 ]
 
 
@@ -66,6 +72,7 @@ static func make_event(keycode: Key, mods: int) -> InputEventKey:
 	event.device = -1  # all devices
 	event.keycode = keycode
 	event.shift_pressed = (mods & SHIFT) != 0
+	event.alt_pressed = (mods & ALT) != 0
 	if (mods & CTRL) != 0:
 		event.command_or_control_autoremap = true
 	return event

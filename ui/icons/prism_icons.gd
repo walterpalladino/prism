@@ -5,6 +5,11 @@ class_name PrismIcons
 extends RefCounted
 
 const DIR: String = "res://ui/icons/"
+const SIZE: int = 24
+
+## Lazily built atlas of every icon, for custom-drawn controls (see atlas()).
+static var _atlas: ImageTexture
+static var _regions: Dictionary[String, Rect2] = {}
 
 
 static func has_icon(icon_name: String) -> bool:
@@ -16,3 +21,30 @@ static func get_icon(icon_name: String) -> Texture2D:
 	if not has_icon(icon_name):
 		return null
 	return load(DIR + icon_name + ".svg") as Texture2D
+
+
+## One texture holding every icon, so a control can draw many icons from a single texture.
+## Custom _draw() code must use this (with atlas_region()) instead of drawing several icon
+## textures: on Godot 4.7.2's Compatibility renderer (macOS), drawing several different
+## textures in one CanvasItem can render some of them as solid rectangles.
+static func atlas() -> ImageTexture:
+	if _atlas == null:
+		var names: PackedStringArray = PackedStringArray()
+		for file: String in ResourceLoader.list_directory(DIR):
+			if file.ends_with(".svg"):
+				names.append_array([file.get_basename()])
+		names.sort()
+		var sheet: Image = Image.create_empty(SIZE * names.size(), SIZE, false, Image.FORMAT_RGBA8)
+		for i: int in names.size():
+			var icon: Image = get_icon(names[i]).get_image()
+			icon.convert(Image.FORMAT_RGBA8)
+			sheet.blit_rect(icon, Rect2i(Vector2i.ZERO, icon.get_size()), Vector2i(i * SIZE, 0))
+			_regions[names[i]] = Rect2(i * SIZE, 0, SIZE, SIZE)
+		_atlas = ImageTexture.create_from_image(sheet)
+	return _atlas
+
+
+## Region of `icon_name` inside atlas(); an empty rect if there is no such icon.
+static func atlas_region(icon_name: String) -> Rect2:
+	var _texture: ImageTexture = atlas()
+	return _regions.get(icon_name, Rect2())

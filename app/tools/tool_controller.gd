@@ -4,6 +4,8 @@ class_name ToolController
 extends RefCounted
 
 signal tool_changed(tool_id: StringName)
+## A stroke is about to start (e.g. playback should stop so the user edits a still frame).
+signal stroke_started()
 
 var tools: Dictionary[StringName, Tool] = {}
 
@@ -46,6 +48,7 @@ func is_stroke_active() -> bool:
 func press(pos: Vector2i, button: PrismEnums.PaintButton, mods: int) -> void:
 	if _stroke_tool != null:
 		return
+	stroke_started.emit()
 	var use_picker: bool = (mods & Tool.MOD_ALT) != 0 and tools.has(&"picker")
 	_stroke_tool = tools[&"picker"] if use_picker else _active
 	_stroke_tool.begin(pos, button, mods)

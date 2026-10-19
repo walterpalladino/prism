@@ -17,3 +17,13 @@ func _init(p_name: String, p_from: int, p_to: int, p_direction: PrismEnums.TagDi
 
 func frame_count() -> int:
 	return to_frame - from_frame + 1
+
+
+func duplicate_tag() -> Tag:
+	var copy: Tag = Tag.new(tag_name, from_frame, to_frame, direction)
+	copy.color = color
+	return copy
+
+
+func contains_frame(index: int) -> bool:
+	return index >= from_frame and index <= to_frame

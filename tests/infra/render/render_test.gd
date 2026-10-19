@@ -99,7 +99,5 @@ func test_stencil_flash_fades_out() -> void:
 	flash.flash(PackedVector2Array([Vector2(1, 2)]))
 	assert_bool(flash.is_flashing()).is_true()
 	await get_tree().create_timer(StencilFlash.FLASH_SECONDS + 0.1).timeout
-	await get_tree().process_frame
-	await get_tree().process_frame
 	assert_bool(flash.is_flashing()).is_false()
 	remove_child(flash)

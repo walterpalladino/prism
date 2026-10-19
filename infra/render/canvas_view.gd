@@ -87,6 +87,7 @@ func setup(bus: CommandBus, state: EditorState, tools: ToolController, cache: Ce
 	Signals.on(_bus.palette_changed, _on_palette_changed)
 	Signals.on(_bus.stencil_blocked, _on_stencil_blocked)
 	Signals.on(_state.changed, _on_state_changed)
+	Signals.on(_state.frame_changed, func(_index: int) -> void: _stack.rebuild(_bus.document, _state.frame_index))
 	Signals.on(_tools.tool_changed, func(_id: StringName) -> void: _rebuild_ghost())
 	_on_document_replaced()
 

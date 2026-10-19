@@ -4,6 +4,8 @@ class_name EditorState
 extends RefCounted
 
 signal changed()
+## The current frame changed (navigation or playback).
+signal frame_changed(index: int)
 
 const DEFAULT_BRUSH_SIZE: int = 1
 
@@ -29,6 +31,10 @@ var selection: Rect2i = Rect2i()
 ## Canvas-space rect being dragged by Brush pickup, for the overlay.
 var pickup_rect: Rect2i = Rect2i()
 var clipboard: IndexedImage = null
+## Inclusive frame range selected in the timeline (x = first, y = last).
+var frame_range: Vector2i = Vector2i.ZERO
+## Pixels of a copied cel (timeline copy/paste), or null.
+var cel_clipboard: IndexedImage = null
 
 
 func _init(p_bus: CommandBus) -> void:
@@ -105,6 +111,51 @@ func set_selection(rect: Rect2i) -> void:
 
 func set_pickup_rect(rect: Rect2i) -> void:
 	pickup_rect = rect
+	changed.emit()
+
+
+## Moves to frame `index` (clamped) and selects just that frame.
+func set_frame(index: int) -> void:
+	var clamped: int = clampi(index, 0, bus.document.frames.size() - 1)
+	frame_range = Vector2i(clamped, clamped)
+	if clamped == frame_index:
+		changed.emit()
+		return
+	frame_index = clamped
+	frame_changed.emit(frame_index)
+	changed.emit()
+
+
+## Moves the playhead without touching the frame selection (used by playback).
+func show_frame(index: int) -> void:
+	var clamped: int = clampi(index, 0, bus.document.frames.size() - 1)
+	if clamped != frame_index:
+		frame_index = clamped
+		frame_changed.emit(frame_index)
+
+
+func set_layer(index: int) -> void:
+	layer_index = clampi(index, 0, bus.document.layers.size() - 1)
+	changed.emit()
+
+
+func set_frame_range(first: int, last: int) -> void:
+	var count: int = bus.document.frames.size()
+	frame_range = Vector2i(clampi(mini(first, last), 0, count - 1), clampi(maxi(first, last), 0, count - 1))
+	changed.emit()
+
+
+## Keeps layer/frame indices and the frame selection inside the document (after undo, deletes).
+func clamp_to_document() -> void:
+	var doc: PrismDocument = bus.document
+	layer_index = clampi(layer_index, 0, doc.layers.size() - 1)
+	var previous: int = frame_index
+	frame_index = clampi(frame_index, 0, doc.frames.size() - 1)
+	frame_range = Vector2i(clampi(frame_range.x, 0, doc.frames.size() - 1), clampi(frame_range.y, 0, doc.frames.size() - 1))
+	if frame_range.x > frame_range.y or not (frame_range.x <= frame_index and frame_index <= frame_range.y):
+		frame_range = Vector2i(frame_index, frame_index)
+	if previous != frame_index:
+		frame_changed.emit(frame_index)
 	changed.emit()
 
 

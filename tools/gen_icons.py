@@ -73,6 +73,7 @@ VENDORED = {
     "preview": "image", "save": "save", "folder": "folder",
     "eye": "eye", "eye_off": "eye-off", "lock": "lock", "unlock": "unlock", "play": "play", "pause": "pause",
     "plus": "plus", "minus": "minus", "trash": "trash", "duplicate": "copy",
+    "prev": "chevron-left", "next": "chevron-right",
 }
 
 

@@ -89,6 +89,48 @@ func get_cel_image(layer_index: int, frame_index: int) -> IndexedImage:
 	return images[cel.image_id]
 
 
+## Rebuilds the (layer_index, frame_index) keys of `cels` from each cel's layer and frame ids,
+## dropping cels whose layer or frame no longer exists. Call after reordering, inserting or
+## removing layers or frames.
+func reindex_cels() -> void:
+	var layer_index: Dictionary[StringName, int] = {}
+	for i: int in layers.size():
+		layer_index[layers[i].id] = i
+	var frame_index: Dictionary[StringName, int] = {}
+	for i: int in frames.size():
+		frame_index[frames[i].id] = i
+	var rebuilt: Dictionary[Vector2i, Cel] = {}
+	for cel: Cel in cels.values():
+		if layer_index.has(cel.layer_id) and frame_index.has(cel.frame_id):
+			rebuilt[Vector2i(layer_index[cel.layer_id], frame_index[cel.frame_id])] = cel
+	cels = rebuilt
+
+
+## Removes images no cel references.
+func prune_images() -> void:
+	var used: Dictionary[StringName, bool] = {}
+	for cel: Cel in cels.values():
+		used[cel.image_id] = true
+	for image_id: StringName in images.keys():
+		if not used.has(image_id):
+			var erased: bool = images.erase(image_id)
+			assert(erased)
+
+
+## Index of the first tag containing `frame_index`, or -1.
+func tag_index_at(frame_index: int) -> int:
+	for i: int in tags.size():
+		if tags[i].contains_frame(frame_index):
+			return i
+	return -1
+
+
+## True if every pixel of the image is the transparent index (an "empty" cel).
+func is_image_empty(image_id: StringName) -> bool:
+	var image: IndexedImage = images[image_id]
+	return image.pixels.count(transparent_index) == image.pixels.size()
+
+
 ## Number of cels referencing `image_id`; more than one means the cels are linked.
 func count_image_users(image_id: StringName) -> int:
 	var count: int = 0

@@ -12,7 +12,7 @@ const MENUS: Array[Array] = [
 	["Picture", [["Palette: PRISM 32", "preset_default", ""], ["Palette: PICO-8 style 16", "preset_pico8", ""], ["Palette: EGA 16", "preset_ega", ""], ["Palette: Grayscale 16", "preset_gray", ""], ["", "", ""], ["Invert stencil", "stencil_invert", "lock"], ["Lock all except FG", "stencil_all_but_fg", "lock"], ["Clear stencil", "stencil_clear", "unlock"]]],
 	["Brush", [["Restore built-in", "prism_brush_restore", "brush"], ["Flip horizontal", "prism_brush_flip_h", "flip_h"], ["Flip vertical", "prism_brush_flip_v", "flip_v"], ["Rotate 90°", "prism_brush_rotate", "rotate"]]],
 	["Mode", [["Color", "mode_color", ""], ["Replace", "mode_replace", ""], ["Shade", "mode_shade", ""]]],
-	["Anim", [["Coming in M4–M5", "-", ""]]],
+	["Anim", [["Play / stop", "prism_play", "play"], ["Previous frame", "prism_frame_prev", "prev"], ["Next frame", "prism_frame_next", "next"], ["", "", ""], ["New frame", "prism_frame_new", "plus"], ["Duplicate frame", "prism_frame_duplicate", "duplicate"], ["Duplicate frame (linked)", "frame_duplicate_linked", "duplicate"], ["Delete frame", "frame_delete", "trash"], ["", "", ""], ["New layer", "layer_new", "plus"], ["Duplicate layer", "layer_duplicate", "duplicate"], ["Delete layer", "layer_delete", "trash"], ["", "", ""], ["New tag from selection", "tag_new", ""]]],
 	["Effect", [["Coming later", "-", ""]]],
 	["View", [["Zoom in", "prism_zoom_in", "zoom_in"], ["Zoom out", "prism_zoom_out", "zoom_out"], ["Zoom 1:1", "prism_zoom_reset", ""], ["Fit", "fit", ""], ["", "", ""], ["Pixel grid", "prism_toggle_grid", "grid"], ["Tile grid: off / 8 / 16 / 32", "tile_grid", "grid"], ["Timeline", "prism_toggle_timeline", "play"], ["", "", ""], ["Preview window", "preview", "preview"], ["Preview 1×", "preview_1", ""], ["Preview 2×", "preview_2", ""]]],
 ]
@@ -20,7 +20,7 @@ const MENUS: Array[Array] = [
 var canvas: CanvasView
 var status_bar: StatusBar
 var preview: PreviewWindow
-var timeline: PanelContainer
+var timeline: TimelineDock
 var side_panel: SidePanel
 var message: AcceptDialog
 
@@ -56,12 +56,9 @@ func _ready() -> void:
 	side_panel.setup(EditorContext.state, EditorContext.palette)
 	body.add_child(side_panel)
 
-	timeline = PanelContainer.new()
-	timeline.custom_minimum_size = Vector2(0, 110)
-	var timeline_label: Label = Label.new()
-	timeline_label.text = "TIMELINE — layers × frames grid arrives in M4  (Ctrl+T hides this dock)"
-	timeline_label.add_theme_color_override("font_color", PrismTheme.DIM)
-	timeline.add_child(timeline_label)
+	timeline = TimelineDock.new()
+	timeline.name = "TimelineDock"
+	timeline.setup(EditorContext.bus, EditorContext.state, EditorContext.timeline, EditorContext.playback)
 	root.add_child(timeline)
 
 	canvas.setup(EditorContext.bus, EditorContext.state, EditorContext.tools, EditorContext.textures, EditorContext.palette_texture)
@@ -167,6 +164,30 @@ func run_action(action: String) -> void:
 		"tile_grid":
 			var next_tile: int = 0 if canvas.tile_grid >= 32 else maxi(8, canvas.tile_grid * 2)
 			canvas.set_tile_grid(next_tile)
+		"prism_frame_prev":
+			EditorContext.playback.stop()
+			EditorContext.timeline.previous_frame()
+		"prism_frame_next":
+			EditorContext.playback.stop()
+			EditorContext.timeline.next_frame()
+		"prism_play":
+			EditorContext.playback.toggle(state.frame_index)
+		"prism_frame_new":
+			EditorContext.timeline.insert_frame(state.frame_index + 1)
+		"prism_frame_duplicate":
+			EditorContext.timeline.duplicate_frame(state.frame_index, false)
+		"frame_duplicate_linked":
+			EditorContext.timeline.duplicate_frame(state.frame_index, true)
+		"frame_delete":
+			var _frame_deleted: bool = EditorContext.timeline.delete_frame(state.frame_index)
+		"layer_new":
+			EditorContext.timeline.add_layer()
+		"layer_duplicate":
+			EditorContext.timeline.duplicate_layer(state.layer_index)
+		"layer_delete":
+			var _layer_deleted: bool = EditorContext.timeline.delete_layer(state.layer_index)
+		"tag_new":
+			var _tag: int = EditorContext.timeline.add_tag(state.frame_range)
 		"prism_toggle_stencil":
 			side_panel.toggle_stencil_section()
 		"stencil_invert":

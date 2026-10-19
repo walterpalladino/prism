@@ -13,3 +13,7 @@ func _init(p_layer_id: StringName, p_frame_id: StringName, p_image_id: StringNam
 	frame_id = p_frame_id
 	image_id = p_image_id
 	offset = p_offset
+
+
+func duplicate_cel() -> Cel:
+	return Cel.new(layer_id, frame_id, image_id, offset)
