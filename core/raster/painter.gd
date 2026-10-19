@@ -57,6 +57,24 @@ func stamp(at: Vector2i) -> bool:
 	return changed
 
 
+## Undoes a stamp at `at`: restores the brush footprint from `source` (the pre-stroke snapshot)
+## and lets those pixels be painted again. Used by pixel-perfect freehand to drop corner pixels.
+func unstamp(at: Vector2i, source: IndexedImage) -> void:
+	var origin: Vector2i = at - brush.anchor
+	var area: Rect2i = Rect2i(origin, brush.get_size()).intersection(image.get_rect())
+	if not area.has_area():
+		return
+	var px: PackedByteArray = image.pixels
+	var w: int = image.width
+	for y: int in range(area.position.y, area.end.y):
+		for x: int in range(area.position.x, area.end.x):
+			if brush.image.get_index(x - origin.x, y - origin.y) == brush.transparent_index:
+				continue
+			var i: int = y * w + x
+			px[i] = source.pixels[i]
+			_touched[i] = 0
+
+
 ## Stamps at every point in order. Returns true if any pixel changed.
 func stamp_points(points: Array[Vector2i]) -> bool:
 	var changed: bool = false

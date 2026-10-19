@@ -21,6 +21,9 @@ These GDScript warnings are set to **Error** in `project.godot`:
 - Type loop variables: `for layer: Layer in doc.layers:`.
 - When a return value is intentionally unused, assign it (`var err: int = ...`) and check it, or put
   `@warning_ignore("return_value_discarded")` on the line before (needed for `Packed*Array.append()`, which returns a bool).
+- Connect signals with `Signals.on(sig, callable)` (`core/util/signals.gd`): `Signal.connect()` returns an
+  error code, which the typing rules forbid discarding.
+- Typed `const` arrays of `PackedStringArray` literals come out empty at runtime; use `Array[Array]` for tables.
 - `res://addons/` is excluded from warnings via `debug/gdscript/warnings/directory_rules`.
 
 ## Architecture rules (GDD §9.2)
@@ -33,6 +36,11 @@ These GDScript warnings are set to **Error** in `project.godot`:
 4. All file and OS access goes through interfaces in `infra/` (`DocumentRepository`, `ImageCodec`) so tests can use fakes.
 5. Every hot loop sits behind a GDExtension-ready interface (`RasterBackend`) with a GDScript implementation first.
 6. Every document mutation is a `Command` (`app/commands/`) with `apply` / `revert`; Godot's `UndoRedo` is not used.
+   Tools paint live into the image and record one `PixelPatch` per stroke on release (`StrokeSession`);
+   `CommandBus.execute()` applies + records, `CommandBus.record()` records an already-applied command.
+7. Keyboard shortcuts are `InputMap` actions defined in `Shortcuts.DEFAULTS` (`app/input/shortcuts.gd`) and stored in
+   `project.godot`. After changing the table, regenerate the `[input]` section (see `Shortcuts` doc comment) and match
+   with `is_action_pressed(action, echo, true)` (exact match, so `X` does not fire on `Ctrl+X`).
 
 ## GDScript facts that matter here (see docs/adr/)
 
@@ -82,7 +90,15 @@ Reimplement behavior from public manuals and documentation.
   GODOT_BIN=/path/to/Godot addons/gdUnit4/runtest.sh --headless --ignoreHeadlessMode -a res://tests
   ```
 
-  Rendering tests need a real renderer and cannot run with `--headless`.
+  Rendering tests need a real renderer and cannot run with `--headless`. Godot's headless display server
+  also does not route mouse input to the GUI, so `tests/ui/` skips itself under `--headless`. Run the whole
+  suite with a window before ticking UI work:
+
+  ```sh
+  GODOT_BIN=/path/to/Godot addons/gdUnit4/runtest.sh -a res://tests
+  ```
+- UI tests push `InputEvent`s into the scene viewport (`get_viewport().push_input`) rather than using gdUnit4's
+  mouse simulation, so input goes through real GUI hit-testing.
 
 ## Benchmarks
 

@@ -25,6 +25,13 @@ Tests use [gdUnit4](https://github.com/godot-gdunit-labs/gdUnit4) 6.2.2, vendore
 GODOT_BIN=/path/to/Godot addons/gdUnit4/runtest.sh --headless --ignoreHeadlessMode -a res://tests
 ```
 
+The UI tests in `tests/ui/` need a window (Godot's headless mode does not route mouse input to the GUI)
+and skip themselves under `--headless`. To run everything:
+
+```sh
+GODOT_BIN=/path/to/Godot addons/gdUnit4/runtest.sh -a res://tests
+```
+
 Reports are written to `reports/` (git-ignored).
 
 ```sh

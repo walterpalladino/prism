@@ -96,51 +96,54 @@ Also delivered early (needed by the spikes): `infra/render/palette_lut.gdshader`
 ## M2 — Canvas, tools, undo (3 weeks)
 
 ### Commands & history (`app/commands/`, `app/history/`) (§7.11, §9.5)
-- [ ] `@abstract Command` — `get_label`, `apply`, `revert`, `get_byte_size`
-- [ ] `PixelPatch` — dirty-rect before/after bytes
-- [ ] `History` — undo/redo stacks; limits by count (default 500, min 200) and memory (default 256 MB)
-- [ ] `CommandBus` — executes commands, pushes to history, emits `document_changed(dirty: Rect2i)`
-- [ ] Stroke coalescing: scratch buffer + growing dirty rect → one `PixelPatch` on release
-- [ ] `Esc` cancel leaves no undo entry
-- [ ] Property test: random command sequence, revert all == original
+- [x] `@abstract Command` — `get_label`, `apply`, `revert`, `get_byte_size`
+- [x] `PixelPatch` — dirty-rect before/after bytes
+- [x] `History` — undo/redo stacks; limits by count (default 500, min 200) and memory (default 256 MB)
+- [x] `CommandBus` — executes commands, pushes to history, emits `document_changed(dirty: Rect2i)`
+- [x] Stroke coalescing: scratch buffer + growing dirty rect → one `PixelPatch` on release
+- [x] `Esc` cancel leaves no undo entry
+- [x] Property test: random command sequence, revert all == original
 
 ### Canvas view (`infra/render/`) (§9.4)
-- [ ] `palette_lut.gdshader` (index → color, transparent discard, opacity, tint)
-- [ ] Shared 256×1 RGBA8 palette `ImageTexture`
-- [ ] `LayerSprite` — one sprite per visible cel, R8 texture from `IndexedImage`
-- [ ] Tiled textures (64×64) for canvases > 256×256; update only dirty tiles, at most once per frame
-- [ ] `CanvasView` scene: `SubViewportContainer` → `SubViewport` → `Camera2D` + layer sprites
-- [ ] Zoom 1×–32× integer steps toward cursor (`+`/`-`/wheel, `1` = 1:1)
-- [ ] Pan with Space+drag and middle mouse
-- [ ] Checkerboard background (configurable colors)
-- [ ] Pixel grid shader overlay (auto ≥ 600%, toggle `G`, optional custom tile grid)
-- [ ] Ghost brush sprite snapped to cursor pixel; hidden over panels
-- [ ] Floating preview `Window` (1×/2×)
+- [x] `palette_lut.gdshader` (index → color, transparent discard, opacity, tint)
+- [x] Shared 256×1 RGBA8 palette `ImageTexture`
+- [x] `LayerSprite` — one sprite per visible cel, R8 texture from `IndexedImage`
+- [x] ~~Tiled textures~~ not needed ≤ 512² ([ADR 0001](docs/adr/0001-display-pipeline.md)); `CelTextureCache` uploads each dirty cel at most once per frame
+- [x] `CanvasView` scene: `SubViewportContainer` → `SubViewport` → `Camera2D` + layer sprites
+- [x] Zoom 1×–32× integer steps toward cursor (`+`/`-`/wheel, `1` = 1:1)
+- [x] Pan with Space+drag and middle mouse
+- [x] Checkerboard background (colors are shader uniforms; user setting arrives with Preferences in M7)
+- [x] Pixel grid shader overlay (auto ≥ 600%, toggle `G`, tile grid 8/16/32 from the View menu)
+- [x] Ghost brush sprite snapped to cursor pixel; hidden over panels
+- [x] Floating preview `Window` (1×/2×), sharing the canvas textures
 
 ### Input & tools (`app/tools/`, `app/input/`) (§7.2)
-- [ ] `ToolController` — routes pointer events to active tool; LMB = FG, RMB = BG
-- [ ] Stroke sampler: `use_accumulated_input = false` during strokes, Bresenham between events
-- [ ] Pencil `D` (+ pixel-perfect toggle)
-- [ ] Eraser `E` (transparent index, respects stencil)
-- [ ] Line `L` (Shift = constrained angles)
-- [ ] Rectangle `R` / filled `Shift+R`
-- [ ] Ellipse `O` / filled
-- [ ] Fill `F` contiguous / `Shift+F` global
-- [ ] Picker `I` and Alt-hold (LMB → FG, RMB → BG)
-- [ ] Rect select `M` — marching ants, copy/cut/paste, arrow-key nudge
-- [ ] Move cel `V` — moves cel offset
-- [ ] Brush pickup `B` (box) → custom brush, transparent index see-through
-- [ ] Brush flip `X` / `Y`, rotate 90° `Z`, restore built-in `Shift+B`
-- [ ] Built-in brush size/shape selection (1–8 px square/round)
+- [x] `ToolController` — routes pointer events to active tool; LMB = FG, RMB = BG
+- [x] Stroke sampler: `use_accumulated_input = false` during strokes, Bresenham between events
+- [ ] Hand-check real input-to-screen latency (fast circles at 800%, ghost must not trail) — ADR 0002 follow-up
+- [x] Pencil `D` (+ pixel-perfect toggle)
+- [x] Eraser `E` (transparent index, respects stencil)
+- [x] Line `L` (Shift = constrained angles)
+- [x] Rectangle `R` / filled `Shift+R`
+- [x] Ellipse `O` / filled
+- [x] Fill `F` contiguous / `Shift+F` global
+- [x] Picker `I` and Alt-hold (LMB → FG, RMB → BG)
+- [x] Rect select `M` — marching ants, copy/cut/paste, arrow-key nudge
+- [x] Move cel `V` — moves cel offset
+- [x] Brush pickup `B` (box) → custom brush, transparent index see-through
+- [x] Brush flip `X` / `Y`, rotate 90° `Z`, restore built-in `Shift+B`
+- [x] Built-in brush size/shape selection (1–8 px square/round)
 
 ### Shell UI
-- [ ] `main.tscn` layout skeleton matching C1: menu bar, canvas, right toolbox, side panel, timeline dock, status bar (§8.1)
-- [ ] Toolbox (2-column icon grid + FG/BG swatches)
-- [ ] Status bar: cursor pos, index + hex under cursor, zoom, tool, frame
-- [ ] `InputMap` actions for all default keys (§8.3)
-- [ ] Prism dark `Theme` (`#1b1c23`, `#262833`, accents `#3d7bff` / `#ff8a3d`) (§8.2)
+- [x] `main.tscn` layout matching C1: menu bar, canvas, right toolbox, side panel, timeline dock (placeholder until M4), status bar (§8.1). Panels are `class_name` scripts in `ui/panels/` built in code
+- [x] Toolbox (2-column icon grid + FG/BG swatches)
+- [x] Status bar: cursor pos, index + hex under cursor, zoom, tool, frame
+- [x] `InputMap` actions for all default keys (§8.3)
+- [x] Prism dark `Theme` (`#1b1c23`, `#262833`, accents `#3d7bff` / `#ff8a3d`) (§8.2), built in `ui/theme/prism_theme.gd`
 
-**Exit:** draw and edit a 64×64 sprite with full undo; `SceneRunner` smoke test simulates stroke + undo and checks the buffer.
+**Exit:** draw and edit a 64×64 sprite with full undo; `SceneRunner` smoke test simulates stroke + undo and checks the buffer. ✅ 154 tests (UI smoke tests need a window), API coverage 100 %.
+
+Also delivered early: a minimal palette swatch grid (LMB = FG, RMB = BG) so M2 is usable; full palette editing is M3.
 
 ---
 
