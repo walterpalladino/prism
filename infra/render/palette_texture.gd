@@ -15,8 +15,12 @@ func _init(palette: Palette) -> void:
 
 ## Re-uploads all entries; unused slots are transparent black.
 func update(palette: Palette) -> void:
+	update_colors(palette.colors)
+
+
+func update_colors(colors: PackedColorArray) -> void:
 	for i: int in Palette.MAX_COLORS:
-		_image.set_pixel(i, 0, palette.get_color(i) if i < palette.size() else Color(0, 0, 0, 0))
+		_image.set_pixel(i, 0, colors[i] if i < colors.size() else Color(0, 0, 0, 0))
 	texture.update(_image)
 
 

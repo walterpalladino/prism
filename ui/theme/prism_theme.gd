@@ -11,6 +11,8 @@ const TEXT: Color = Color("#c9cbd6")
 const DIM: Color = Color("#7d8197")
 const BLUE: Color = Color("#3d7bff")
 const ORANGE: Color = Color("#ff8a3d")
+## Color-cycle brackets (concept C1/C3).
+const CYCLE: Color = Color("#3dffd0")
 const FONT_SIZE: int = 13
 
 

@@ -30,6 +30,11 @@ var _viewport: SubViewport
 var _world: Node2D
 var _checker: ColorRect
 var _stack: CelStack
+## Onion-skin frames, drawn in front of or behind the current frame.
+var _onion: Node2D
+var _playing: bool = false
+## Settings + frames the onion layers were built for; rebuild only when it changes.
+var _onion_key: String = ""
 var _grid: ColorRect
 var _overlay: SelectionOverlay
 var _flash: StencilFlash
@@ -58,6 +63,8 @@ func _init() -> void:
 	_viewport.add_child(_world)
 	_checker = _shaded_rect(CHECKER_SHADER)
 	_world.add_child(_checker)
+	_onion = Node2D.new()
+	_world.add_child(_onion)
 	_stack = CelStack.new()
 	_world.add_child(_stack)
 	_grid = _shaded_rect(GRID_SHADER)
@@ -87,7 +94,7 @@ func setup(bus: CommandBus, state: EditorState, tools: ToolController, cache: Ce
 	Signals.on(_bus.palette_changed, _on_palette_changed)
 	Signals.on(_bus.stencil_blocked, _on_stencil_blocked)
 	Signals.on(_state.changed, _on_state_changed)
-	Signals.on(_state.frame_changed, func(_index: int) -> void: _stack.rebuild(_bus.document, _state.frame_index))
+	Signals.on(_state.frame_changed, func(_index: int) -> void: _rebuild_frame())
 	Signals.on(_tools.tool_changed, func(_id: StringName) -> void: _rebuild_ghost())
 	_on_document_replaced()
 
@@ -282,12 +289,67 @@ func _on_image_changed(image_id: StringName, _dirty: Rect2i) -> void:
 func _on_document_changed(dirty: Rect2i) -> void:
 	if not dirty.has_area():
 		_cache.mark_all_dirty()
-	_stack.rebuild(_bus.document, _state.frame_index)
+	_rebuild_frame()
 
 
 func _on_palette_changed() -> void:
-	_palette_texture.update(_bus.document.palette)
 	_rebuild_ghost()
+
+
+## Hides onion skin while playing (GDD §7.9).
+func set_playing(playing: bool) -> void:
+	_playing = playing
+	_rebuild_onion()
+
+
+## The rendered view as an image (render tests; needs a real renderer).
+func capture() -> Image:
+	var image: Image = _viewport.get_texture().get_image()
+	image.convert(Image.FORMAT_RGBA8)
+	return image
+
+
+## Number of onion frames currently drawn (for tests and benchmarks).
+func onion_frame_count() -> int:
+	return _onion.get_child_count()
+
+
+func _rebuild_frame() -> void:
+	_stack.rebuild(_bus.document, _state.frame_index)
+	_rebuild_onion()
+
+
+func _onion_signature() -> String:
+	if _playing:
+		return "playing"
+	return "%s|%s|%s|%s|%s" % [_state.onion_frames(), _state.onion_opacity, _state.onion_past_tint, _state.onion_future_tint, _state.onion_in_front]
+
+
+## True if onion frames are drawn over the current frame.
+func is_onion_in_front() -> bool:
+	return _onion.get_index() > _stack.get_index()
+
+
+func _rebuild_onion() -> void:
+	_onion_key = _onion_signature()
+	# Moving the onion node to the stack's index swaps their drawing order.
+	if is_onion_in_front() != _state.onion_in_front:
+		_world.move_child(_onion, _stack.get_index())
+	for child: Node in _onion.get_children():
+		_onion.remove_child(child)
+		child.queue_free()
+	if _playing:
+		return
+	var doc: PrismDocument = _bus.document
+	for entry: Vector2i in _state.onion_frames():
+		var distance: int = absi(entry.y)
+		var count: int = _state.onion_past if entry.y < 0 else _state.onion_future
+		var opacity: float = _state.onion_opacity * (1.0 - float(distance - 1) / float(count + 1))
+		var tint: Color = Color(_state.onion_past_tint if entry.y < 0 else _state.onion_future_tint, 0.5)
+		var stack: CelStack = CelStack.new()
+		stack.setup(_cache, _palette_texture)
+		stack.rebuild(doc, entry.x, tint, opacity)
+		_onion.add_child(stack)
 
 
 func _on_stencil_blocked(image_id: StringName, offsets: PackedInt32Array) -> void:
@@ -315,13 +377,12 @@ func is_flashing() -> bool:
 func _on_document_replaced() -> void:
 	var doc: PrismDocument = _bus.document
 	_cache.clear()
-	_palette_texture.update(doc.palette)
 	var canvas: Vector2 = Vector2(doc.width, doc.height)
 	_checker.size = canvas
 	_grid.size = canvas
 	(_checker.material as ShaderMaterial).set_shader_parameter("canvas_size", canvas)
 	(_grid.material as ShaderMaterial).set_shader_parameter("canvas_size", canvas)
-	_stack.rebuild(doc, _state.frame_index)
+	_rebuild_frame()
 	_needs_fit = true
 	if size.x > 0.0:
 		fit()
@@ -336,6 +397,8 @@ func _on_resized() -> void:
 
 
 func _on_state_changed() -> void:
+	if _onion_signature() != _onion_key:
+		_rebuild_onion()
 	_overlay.selection = _state.selection
 	_overlay.pickup = _state.pickup_rect
 	_overlay.queue_redraw()

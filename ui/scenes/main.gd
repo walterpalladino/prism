@@ -7,12 +7,12 @@ const NEW_SIZES: Array[Vector2i] = [Vector2i(16, 16), Vector2i(32, 32), Vector2i
 
 ## Menu name -> list of [label, action, icon] ("" action = separator, "-" = disabled placeholder).
 const MENUS: Array[Array] = [
-	["Project", [["New 16×16", "new_16", "new"], ["New 32×32", "new_32", "new"], ["New 64×64", "new_64", "new"], ["New 128×128", "new_128", "new"], ["New 256×256", "new_256", "new"], ["", "", ""], ["Load palette…", "palette_load", "folder"], ["Save palette…", "palette_save", "save"], ["", "", ""], ["Quit", "quit", "close"]]],
+	["Project", [["New 16×16", "new_16", "new"], ["New 32×32", "new_32", "new"], ["New 64×64", "new_64", "new"], ["New 128×128", "new_128", "new"], ["New 256×256", "new_256", "new"], ["", "", ""], ["Open demo: Waterfall (color cycling)", "demo_waterfall", "play"], ["", "", ""], ["Load palette…", "palette_load", "folder"], ["Save palette…", "palette_save", "save"], ["", "", ""], ["Quit", "quit", "close"]]],
 	["Edit", [["Undo", "prism_undo", "undo"], ["Redo", "prism_redo", "redo"], ["", "", ""], ["Cut", "prism_cut", "cut"], ["Copy", "prism_copy", "copy"], ["Paste", "prism_paste", "paste"], ["", "", ""], ["Deselect", "deselect", "close"]]],
 	["Picture", [["Palette: PRISM 32", "preset_default", ""], ["Palette: PICO-8 style 16", "preset_pico8", ""], ["Palette: EGA 16", "preset_ega", ""], ["Palette: Grayscale 16", "preset_gray", ""], ["", "", ""], ["Invert stencil", "stencil_invert", "lock"], ["Lock all except FG", "stencil_all_but_fg", "lock"], ["Clear stencil", "stencil_clear", "unlock"]]],
 	["Brush", [["Restore built-in", "prism_brush_restore", "brush"], ["Flip horizontal", "prism_brush_flip_h", "flip_h"], ["Flip vertical", "prism_brush_flip_v", "flip_v"], ["Rotate 90°", "prism_brush_rotate", "rotate"]]],
 	["Mode", [["Color", "mode_color", ""], ["Replace", "mode_replace", ""], ["Shade", "mode_shade", ""]]],
-	["Anim", [["Play / stop", "prism_play", "play"], ["Previous frame", "prism_frame_prev", "prev"], ["Next frame", "prism_frame_next", "next"], ["", "", ""], ["New frame", "prism_frame_new", "plus"], ["Duplicate frame", "prism_frame_duplicate", "duplicate"], ["Duplicate frame (linked)", "frame_duplicate_linked", "duplicate"], ["Delete frame", "frame_delete", "trash"], ["", "", ""], ["New layer", "layer_new", "plus"], ["Duplicate layer", "layer_duplicate", "duplicate"], ["Delete layer", "layer_delete", "trash"], ["", "", ""], ["New tag from selection", "tag_new", ""]]],
+	["Anim", [["Play / stop", "prism_play", "play"], ["Previous frame", "prism_frame_prev", "prev"], ["Next frame", "prism_frame_next", "next"], ["", "", ""], ["New frame", "prism_frame_new", "plus"], ["Duplicate frame", "prism_frame_duplicate", "duplicate"], ["Duplicate frame (linked)", "frame_duplicate_linked", "duplicate"], ["Delete frame", "frame_delete", "trash"], ["", "", ""], ["New layer", "layer_new", "plus"], ["Duplicate layer", "layer_duplicate", "duplicate"], ["Delete layer", "layer_delete", "trash"], ["", "", ""], ["New tag from selection", "tag_new", ""], ["", "", ""], ["Onion skin", "prism_toggle_onion", "eye"], ["Color cycling preview", "prism_toggle_cycling", "play"]]],
 	["Effect", [["Coming later", "-", ""]]],
 	["View", [["Zoom in", "prism_zoom_in", "zoom_in"], ["Zoom out", "prism_zoom_out", "zoom_out"], ["Zoom 1:1", "prism_zoom_reset", ""], ["Fit", "fit", ""], ["", "", ""], ["Pixel grid", "prism_toggle_grid", "grid"], ["Tile grid: off / 8 / 16 / 32", "tile_grid", "grid"], ["Timeline", "prism_toggle_timeline", "play"], ["", "", ""], ["Preview window", "preview", "preview"], ["Preview 1×", "preview_1", ""], ["Preview 2×", "preview_2", ""]]],
 ]
@@ -53,7 +53,7 @@ func _ready() -> void:
 	toolbox_panel.add_child(toolbox)
 	body.add_child(toolbox_panel)
 	side_panel = SidePanel.new()
-	side_panel.setup(EditorContext.state, EditorContext.palette)
+	side_panel.setup(EditorContext.state, EditorContext.palette, EditorContext.cycling)
 	body.add_child(side_panel)
 
 	timeline = TimelineDock.new()
@@ -68,12 +68,25 @@ func _ready() -> void:
 	root.add_child(status_bar)
 
 	preview = PreviewWindow.new()
-	preview.setup(EditorContext.bus, EditorContext.state, EditorContext.textures, EditorContext.palette_texture)
+	preview.setup(EditorContext.bus, EditorContext.state, EditorContext.textures, EditorContext.palette_texture, EditorContext.cycling)
 	add_child(preview)
 	preview.visible = false
+	Signals.on(EditorContext.playback.playing_changed, canvas.set_playing)
 	message = AcceptDialog.new()
 	message.title = "PRISM"
 	add_child(message)
+
+
+## Tab toggles color cycling (DPaint). It is caught here, before the GUI would use it to
+## move keyboard focus. Text fields keep Tab for themselves.
+func _input(event: InputEvent) -> void:
+	if not event.is_action_pressed(&"prism_toggle_cycling", false, true):
+		return
+	var focus: Control = get_viewport().gui_get_focus_owner()
+	if focus is LineEdit or focus is TextEdit:
+		return
+	run_action("prism_toggle_cycling")
+	get_viewport().set_input_as_handled()
 
 
 func _unhandled_key_input(event: InputEvent) -> void:
@@ -188,6 +201,14 @@ func run_action(action: String) -> void:
 			var _layer_deleted: bool = EditorContext.timeline.delete_layer(state.layer_index)
 		"tag_new":
 			var _tag: int = EditorContext.timeline.add_tag(state.frame_range)
+		"prism_toggle_onion":
+			state.set_onion(not state.onion_enabled, state.onion_past, state.onion_future, state.onion_tag_bounded)
+		"prism_toggle_cycling":
+			EditorContext.cycling.toggle(&"tab")
+		"demo_waterfall":
+			ctx.call(&"open_document", DemoDocuments.waterfall())
+			EditorContext.cycling.request(&"tab", true)
+			canvas.fit()
 		"prism_toggle_stencil":
 			side_panel.toggle_stencil_section()
 		"stencil_invert":

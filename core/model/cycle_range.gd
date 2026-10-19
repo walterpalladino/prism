@@ -21,3 +21,13 @@ func length() -> int:
 
 func overlaps(other: CycleRange) -> bool:
 	return start_index <= other.end_index and other.start_index <= end_index
+
+
+func duplicate_cycle() -> CycleRange:
+	var copy: CycleRange = CycleRange.new(start_index, end_index, rate_hz, step)
+	copy.active = active
+	return copy
+
+
+func contains(index: int) -> bool:
+	return index >= start_index and index <= end_index

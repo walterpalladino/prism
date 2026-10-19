@@ -12,6 +12,7 @@ var selection: SelectionActions
 var palette: PaletteActions
 var timeline: TimelineActions
 var playback: Playback
+var cycling: ColorCycling
 
 
 func _init(width: int = 8, height: int = 8) -> void:
@@ -32,6 +33,7 @@ func _init(width: int = 8, height: int = 8) -> void:
 	palette = PaletteActions.new(bus, state)
 	timeline = TimelineActions.new(bus, state)
 	playback = Playback.new(bus)
+	cycling = ColorCycling.new(bus)
 
 
 func image() -> IndexedImage:

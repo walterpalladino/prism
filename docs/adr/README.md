@@ -11,5 +11,6 @@ Superseding a decision means adding a new ADR and marking the old one *Supersede
 | [0004](0004-test-coverage.md) | No line coverage; API-level coverage script + checklist | Accepted |
 | [0005](0005-packed-array-semantics.md) | Packed arrays are shared by reference in Godot 4.7 | Accepted |
 | [0006](0006-renderer.md) | Compatibility renderer is the shipped default (GDD Q3) | Accepted |
+| [0007](0007-onion-and-cycling-rendering.md) | Onion skin and color cycling: LUT rotation, tinted stacks; 231 fps | Accepted |
 
 All measurements: Godot 4.7.2-stable, Apple M1 (macOS), 2026-10-19. Re-run the scripts in `bench/` on other machines and append results.

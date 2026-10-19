@@ -47,6 +47,8 @@ const DEFAULTS: Dictionary[StringName, Array] = {
 	&"prism_cancel": [[KEY_ESCAPE, 0]],
 	&"prism_toggle_timeline": [[KEY_T, CTRL]],
 	&"prism_toggle_stencil": [[KEY_QUOTELEFT, SHIFT], [KEY_ASCIITILDE, 0], [KEY_ASCIITILDE, SHIFT]],
+	&"prism_toggle_onion": [[KEY_F3, 0]],
+	&"prism_toggle_cycling": [[KEY_TAB, 0]],
 	&"prism_frame_prev": [[KEY_COMMA, 0]],
 	&"prism_frame_next": [[KEY_PERIOD, 0]],
 	&"prism_play": [[KEY_ENTER, 0], [KEY_KP_ENTER, 0]],

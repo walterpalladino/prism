@@ -134,6 +134,56 @@ func remove_ramp_at(index: int) -> bool:
 	return true
 
 
+# --- color cycling -----------------------------------------------------------
+
+const DEFAULT_CYCLE_RATE_HZ: float = 8.0
+
+## Adds a cycle over the FG..BG span. Returns "" or a reason it was refused.
+func add_cycle_between_fg_and_bg() -> String:
+	return add_cycle(mini(state.fg, state.bg), maxi(state.fg, state.bg), DEFAULT_CYCLE_RATE_HZ, 1)
+
+
+func add_cycle(start: int, end: int, rate_hz: float, step: int) -> String:
+	var edited: Array[CycleRange] = _cycles_copy()
+	edited.append(CycleRange.new(start, end, rate_hz, step))
+	return _set_cycles(edited, "Add Cycle")
+
+
+## Changes cycle `index`. Returns "" or a reason it was refused (overlap, bad range...).
+func update_cycle(index: int, start: int, end: int, rate_hz: float, step: int, active: bool) -> String:
+	if index < 0 or index >= bus.document.cycles.size():
+		return "no such cycle"
+	var edited: Array[CycleRange] = _cycles_copy()
+	var cycle: CycleRange = CycleRange.new(mini(start, end), maxi(start, end), rate_hz, step)
+	cycle.active = active
+	edited[index] = cycle
+	return _set_cycles(edited, "Edit Cycle")
+
+
+func delete_cycle(index: int) -> void:
+	if index < 0 or index >= bus.document.cycles.size():
+		return
+	var edited: Array[CycleRange] = _cycles_copy()
+	edited.remove_at(index)
+	var _error: String = _set_cycles(edited, "Delete Cycle")
+
+
+func _cycles_copy() -> Array[CycleRange]:
+	var copies: Array[CycleRange] = []
+	for cycle: CycleRange in bus.document.cycles:
+		copies.append(cycle.duplicate_cycle())
+	return copies
+
+
+func _set_cycles(cycles: Array[CycleRange], label: String) -> String:
+	commit_color()
+	var errors: PackedStringArray = DocumentValidator.validate_cycles(cycles, palette().size())
+	if not errors.is_empty():
+		return errors[0]
+	bus.execute(SetCyclesCommand.new(bus.document.cycles, cycles, label))
+	return ""
+
+
 # --- stencil -----------------------------------------------------------------
 
 func toggle_lock(index: int) -> void:

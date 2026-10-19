@@ -19,7 +19,7 @@ var _play: Button
 var _scale_button: Button
 
 
-func setup(bus: CommandBus, state: EditorState, cache: CelTextureCache, palette_texture: PaletteTexture) -> void:
+func setup(bus: CommandBus, state: EditorState, cache: CelTextureCache, palette_texture: PaletteTexture, cycling: ColorCycling) -> void:
 	_bus = bus
 	_state = state
 	playback = Playback.new(bus)
@@ -49,6 +49,8 @@ func setup(bus: CommandBus, state: EditorState, cache: CelTextureCache, palette_
 	add_child(_stack)
 	Signals.on(playback.frame_changed, func(_index: int) -> void: _rebuild())
 	Signals.on(playback.playing_changed, func(playing: bool) -> void:
+		# Color cycling runs while the preview plays (GDD §7.6).
+		cycling.request(&"preview", playing)
 		_play.icon = PrismIcons.get_icon("pause" if playing else "play")
 		_rebuild())
 	Signals.on(bus.document_changed, func(_dirty: Rect2i) -> void: _rebuild())

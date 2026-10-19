@@ -14,6 +14,8 @@ var selection: SelectionActions
 var palette: PaletteActions
 var timeline: TimelineActions
 var playback: Playback
+var cycling: ColorCycling
+var palette_display: PaletteDisplay
 var raster_backend: RasterBackend
 var textures: CelTextureCache
 var palette_texture: PaletteTexture
@@ -27,6 +29,7 @@ func _init() -> void:
 	palette = PaletteActions.new(bus, state)
 	timeline = TimelineActions.new(bus, state)
 	playback = Playback.new(bus)
+	cycling = ColorCycling.new(bus)
 	tools = ToolController.new()
 	tools.register(PencilTool.new(bus, state))
 	tools.register(PencilTool.new(bus, state, true))
@@ -45,19 +48,28 @@ func _init() -> void:
 	Signals.on(tools.stroke_started, playback.stop)
 	textures = CelTextureCache.new()
 	palette_texture = PaletteTexture.new(bus.document.palette)
+	palette_display = PaletteDisplay.new(palette_texture, cycling)
 
 
 func _process(delta: float) -> void:
 	playback.advance(delta * 1000.0)
+	cycling.advance(delta)
 
 
 func _on_playing_changed(playing: bool) -> void:
+	# Color cycling runs during timeline playback (GDD §7.6).
+	cycling.request(&"playback", playing)
 	if not playing:
 		state.set_frame(playback.frame)
 
 
 ## Replaces the open document with a new blank one.
 func new_document(size: Vector2i) -> void:
+	open_document(PrismDocument.create(size.x, size.y))
+
+
+## Replaces the open document (new, demo, or loaded from disk in M6).
+func open_document(document: PrismDocument) -> void:
 	tools.cancel()
 	playback.stop()
 	palette.commit_color()
@@ -65,4 +77,4 @@ func new_document(size: Vector2i) -> void:
 	state.frame_index = 0
 	state.frame_range = Vector2i.ZERO
 	state.set_selection(Rect2i())
-	bus.replace_document(PrismDocument.create(size.x, size.y))
+	bus.replace_document(document)

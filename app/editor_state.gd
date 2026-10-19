@@ -31,6 +31,22 @@ var selection: Rect2i = Rect2i()
 ## Canvas-space rect being dragged by Brush pickup, for the overlay.
 var pickup_rect: Rect2i = Rect2i()
 var clipboard: IndexedImage = null
+## Onion skin / light table (GDD §7.9).
+var onion_enabled: bool = false
+var onion_past: int = 2
+var onion_future: int = 1
+## Only show neighbors inside the tag containing the current frame.
+var onion_tag_bounded: bool = true
+## Draw onion frames over the current frame (translucent) instead of behind it. In front is the
+## default because behind them, identical or opaque frames hide the onion completely.
+var onion_in_front: bool = true
+var onion_past_tint: Color = Color("#3d7bff")
+var onion_future_tint: Color = Color("#ff8a3d")
+## Opacity of the nearest onion frame; each further frame fades linearly.
+var onion_opacity: float = 0.45
+
+const ONION_MAX: int = 5
+
 ## Inclusive frame range selected in the timeline (x = first, y = last).
 var frame_range: Vector2i = Vector2i.ZERO
 ## Pixels of a copied cel (timeline copy/paste), or null.
@@ -157,6 +173,42 @@ func clamp_to_document() -> void:
 	if previous != frame_index:
 		frame_changed.emit(frame_index)
 	changed.emit()
+
+
+func set_onion_in_front(value: bool) -> void:
+	onion_in_front = value
+	changed.emit()
+
+
+func set_onion(enabled: bool, past: int, future: int, tag_bounded: bool) -> void:
+	onion_enabled = enabled
+	onion_past = clampi(past, 0, ONION_MAX)
+	onion_future = clampi(future, 0, ONION_MAX)
+	onion_tag_bounded = tag_bounded
+	changed.emit()
+
+
+## Onion frames around the current frame as [frame index, distance] pairs; negative
+## distance = past. Empty when onion skin is off.
+func onion_frames() -> Array[Vector2i]:
+	var result: Array[Vector2i] = []
+	if not onion_enabled:
+		return result
+	var doc: PrismDocument = bus.document
+	var first: int = 0
+	var last: int = doc.frames.size() - 1
+	if onion_tag_bounded:
+		var tag_index: int = doc.tag_index_at(frame_index)
+		if tag_index != -1:
+			first = doc.tags[tag_index].from_frame
+			last = doc.tags[tag_index].to_frame
+	for d: int in range(onion_past, 0, -1):
+		if frame_index - d >= first:
+			result.append(Vector2i(frame_index - d, -d))
+	for d: int in range(1, onion_future + 1):
+		if frame_index + d <= last:
+			result.append(Vector2i(frame_index + d, d))
+	return result
 
 
 func make_ink_context(button: PrismEnums.PaintButton) -> InkContext:

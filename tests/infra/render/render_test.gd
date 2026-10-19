@@ -101,3 +101,43 @@ func test_stencil_flash_fades_out() -> void:
 	await get_tree().create_timer(StencilFlash.FLASH_SECONDS + 0.1).timeout
 	assert_bool(flash.is_flashing()).is_false()
 	remove_child(flash)
+
+
+func test_canvas_builds_onion_layers_and_hides_them_while_playing() -> void:
+	var fx: AppFixture = AppFixture.new(16, 16)
+	for i: int in 7:
+		fx.timeline.insert_frame(i + 1)
+	var view: CanvasView = auto_free(CanvasView.new())
+	add_child(view)
+	view.size = Vector2(400, 300)
+	view.setup(fx.bus, fx.state, fx.controller, CelTextureCache.new(), PaletteTexture.new(fx.bus.document.palette))
+	fx.state.set_frame(4)
+	assert_int(view.onion_frame_count()).is_equal(0)
+	fx.state.set_onion(true, 3, 2, false)
+	assert_int(view.onion_frame_count()).is_equal(5)
+	view.set_playing(true)
+	assert_int(view.onion_frame_count()).is_equal(0)
+	view.set_playing(false)
+	fx.state.set_frame(7)
+	assert_int(view.onion_frame_count()).is_equal(3)
+	assert_bool(view.is_onion_in_front()).is_true()
+	fx.state.set_onion_in_front(false)
+	assert_bool(view.is_onion_in_front()).is_false()
+	fx.state.set_onion_in_front(true)
+	assert_bool(view.is_onion_in_front()).is_true()
+	remove_child(view)
+
+
+func test_palette_display_shows_cycled_colors() -> void:
+	var fx: AppFixture = AppFixture.new(4, 4)
+	fx.palette.add_cycle(16, 21, 10.0, 1)
+	var texture: PaletteTexture = PaletteTexture.new(fx.bus.document.palette)
+	var _display: PaletteDisplay = PaletteDisplay.new(texture, fx.cycling)
+	fx.cycling.request(&"tab", true)
+	fx.cycling.advance(0.1)
+	assert_bool(texture.get_color(17).is_equal_approx(fx.bus.document.palette.get_color(16))).is_true()
+	fx.cycling.request(&"tab", false)
+	assert_bool(texture.get_color(17).is_equal_approx(fx.bus.document.palette.get_color(17))).is_true()
+	texture.update_colors(PackedColorArray([Color.RED]))
+	assert_bool(texture.get_color(0).is_equal_approx(Color.RED)).is_true()
+	assert_float(texture.get_color(1).a).is_equal(0.0)

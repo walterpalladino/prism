@@ -23,6 +23,8 @@ These GDScript warnings are set to **Error** in `project.godot`:
   `@warning_ignore("return_value_discarded")` on the line before (needed for `Packed*Array.append()`, which returns a bool).
 - Connect signals with `Signals.on(sig, callable)` (`core/util/signals.gd`): `Signal.connect()` returns an
   error code, which the typing rules forbid discarding.
+- `RefCounted` services connect signals with method callables, never lambdas that use `self`: the signal
+  holds the lambda, the lambda holds the service, the service holds the emitter — a leak (ADR 0007).
 - Typed `const` arrays of `PackedStringArray` literals come out empty at runtime; use `Array[Array]` for tables.
 - `res://addons/` is excluded from warnings via `debug/gdscript/warnings/directory_rules`.
 
@@ -90,6 +92,7 @@ Reimplement behavior from public manuals and documentation.
   `@warning_ignore_start("return_value_discarded")` because gdUnit4's fluent asserts return a value.
 - Every public function in `core/` and every command/tool in `app/` needs tests.
   `python3 tools/api_coverage.py` lists public functions no test calls; keep it at 100 % (ADR 0004).
+- Render goldens (`tests/render/`, PNGs in `tests/golden/render/`) read back the real canvas and need a window.
 - Golden files live in `tests/golden/` as text (one hex digit per pixel). Regenerate with
   `PRISM_UPDATE_GOLDEN=1` and review the diff by eye before committing.
 - Run all tests headless:
@@ -114,6 +117,7 @@ Reimplement behavior from public manuals and documentation.
 godot --headless --path . -s res://bench/cpu_bench.gd      # flood fill, undo patches, strokes, GIF LZW
 godot --path . -s res://bench/display_bench.gd             # texture uploads, frame times (opens a window)
 godot --path . -s res://bench/lut_check.gd                 # palette shader correctness (opens a window)
+godot --path . -s res://bench/onion_bench.gd               # onion 3/2 + cycling frame time (opens a window)
 ```
 
 ## Known engine quirks (Godot 4.7.2, Compatibility renderer, macOS)

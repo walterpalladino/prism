@@ -13,6 +13,11 @@ var _actions: TimelineActions
 var _playback: Playback
 var _play_button: Button
 var _info: Label
+var _onion: Button
+var _onion_past: SpinBox
+var _onion_future: SpinBox
+var _onion_tag: CheckBox
+var _onion_front: CheckBox
 
 
 func setup(bus: CommandBus, state: EditorState, actions: TimelineActions, playback: Playback) -> void:
@@ -41,6 +46,28 @@ func setup(bus: CommandBus, state: EditorState, actions: TimelineActions, playba
 	_text_button(bar, "−Layer", "Delete the current layer", func() -> void:
 		var _deleted: bool = _actions.delete_layer(_state.layer_index))
 	_text_button(bar, "+Tag", "New tag from the selected frames", func() -> void: _edit_tag(_actions.add_tag(_state.frame_range)))
+	bar.add_child(VSeparator.new())
+	_onion = Button.new()
+	_onion.text = "Onion"
+	_onion.toggle_mode = true
+	_onion.focus_mode = Control.FOCUS_NONE
+	_onion.tooltip_text = "Onion skin: show neighboring frames (F3)"
+	Signals.on(_onion.toggled, func(_on: bool) -> void: _apply_onion())
+	bar.add_child(_onion)
+	_onion_past = _onion_spin(bar, "Past frames (blue)")
+	_onion_future = _onion_spin(bar, "Future frames (orange)")
+	_onion_tag = CheckBox.new()
+	_onion_tag.text = "Tag only"
+	_onion_tag.focus_mode = Control.FOCUS_NONE
+	_onion_tag.tooltip_text = "Only show frames inside the current tag"
+	Signals.on(_onion_tag.toggled, func(_on: bool) -> void: _apply_onion())
+	bar.add_child(_onion_tag)
+	_onion_front = CheckBox.new()
+	_onion_front.text = "Front"
+	_onion_front.focus_mode = Control.FOCUS_NONE
+	_onion_front.tooltip_text = "Draw onion frames over the current frame (otherwise behind it)"
+	Signals.on(_onion_front.toggled, func(on: bool) -> void: _state.set_onion_in_front(on))
+	bar.add_child(_onion_front)
 	_info = Label.new()
 	_info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_info.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
@@ -61,9 +88,34 @@ func setup(bus: CommandBus, state: EditorState, actions: TimelineActions, playba
 	Signals.on(view.opacity_requested, _edit_opacity)
 	Signals.on(_playback.playing_changed, _on_playing_changed)
 	Signals.on(_state.changed, _refresh_info)
+	Signals.on(_state.changed, _refresh_onion)
 	Signals.on(_state.frame_changed, func(_index: int) -> void: _refresh_info())
 	Signals.on(_bus.document_changed, func(_dirty: Rect2i) -> void: _refresh_info())
 	_refresh_info()
+	_refresh_onion()
+
+
+func _onion_spin(parent: Container, tooltip: String) -> SpinBox:
+	var spin: SpinBox = SpinBox.new()
+	spin.min_value = 0
+	spin.max_value = EditorState.ONION_MAX
+	spin.tooltip_text = tooltip
+	spin.custom_minimum_size = Vector2(56, 0)
+	Signals.on(spin.value_changed, func(_v: float) -> void: _apply_onion())
+	parent.add_child(spin)
+	return spin
+
+
+func _apply_onion() -> void:
+	_state.set_onion(_onion.button_pressed, int(_onion_past.value), int(_onion_future.value), _onion_tag.button_pressed)
+
+
+func _refresh_onion() -> void:
+	_onion.set_pressed_no_signal(_state.onion_enabled)
+	_onion_past.set_value_no_signal(_state.onion_past)
+	_onion_future.set_value_no_signal(_state.onion_future)
+	_onion_tag.set_pressed_no_signal(_state.onion_tag_bounded)
+	_onion_front.set_pressed_no_signal(_state.onion_in_front)
 
 
 func _on_playing_changed(playing: bool) -> void:
@@ -80,6 +132,9 @@ func _refresh_info() -> void:
 		parts.append_array(["tag " + doc.tags[tag_index].tag_name])
 	if _playback.playing:
 		parts.append_array(["playing"])
+	elif _state.onion_enabled:
+		var shown: int = _state.onion_frames().size()
+		parts.append_array(["onion: %d frame%s" % [shown, "" if shown == 1 else "s"] if shown > 0 else "onion: no neighboring frames"])
 	_info.text = "  ·  ".join(parts) + "  "
 
 

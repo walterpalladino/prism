@@ -14,7 +14,9 @@ func setup(cache: CelTextureCache, palette_texture: PaletteTexture) -> void:
 	_palette_texture = palette_texture
 
 
-func rebuild(doc: PrismDocument, frame_index: int) -> void:
+## Rebuilds the sprites for `frame_index`. `tint` (rgb + strength in a) and `opacity` are
+## applied on top of each layer's own opacity; onion skin uses them.
+func rebuild(doc: PrismDocument, frame_index: int, tint: Color = Color(1, 1, 1, 0), opacity: float = 1.0) -> void:
 	for child: Node in get_children():
 		remove_child(child)
 		child.queue_free()
@@ -24,7 +26,8 @@ func rebuild(doc: PrismDocument, frame_index: int) -> void:
 		if not layer.visible or cel == null:
 			continue
 		var texture: ImageTexture = _cache.get_texture(doc.images[cel.image_id])
-		var sprite: Sprite2D = make_sprite(texture, _palette_texture.texture, doc.transparent_index, layer.opacity / 255.0)
+		var sprite: Sprite2D = make_sprite(texture, _palette_texture.texture, doc.transparent_index, layer.opacity / 255.0 * opacity)
+		(sprite.material as ShaderMaterial).set_shader_parameter("tint", tint)
 		sprite.position = Vector2(cel.offset)
 		add_child(sprite)
 

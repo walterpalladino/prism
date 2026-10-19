@@ -209,22 +209,22 @@ Also delivered early: a minimal palette swatch grid (LMB = FG, RMB = BG) so M2 i
 ## M5 — Color cycling & onion skin (2 weeks)
 
 ### Color cycling (§7.6)
-- [ ] `core/cycling/` — compute rotated palette for a time `t`; non-overlap validation (max 4 ranges)
-- [ ] Cycle range editor (start, end, rate, direction, active) with brackets on the palette (C1/C3)
-- [ ] `Tab` toggles cycling preview
-- [ ] Rotate palette slice in the LUT texture once per tick
-- [ ] Cycling runs during timeline playback and in the preview window
+- [x] `core/cycling/` — `ColorCycler` computes the rotated palette for a time `t` (+ loop length for M6 baking); non-overlap validation (max 4 ranges)
+- [x] Cycle range editor (CYCLING section: add FG→BG, edit form, on/off, delete — all undoable) with teal brackets on the palette (C1/C3)
+- [x] `Tab` toggles cycling preview
+- [x] Rotate palette slice in the LUT texture only when a cycle steps (`ColorCycling` → `PaletteDisplay`, the single LUT writer)
+- [x] Cycling runs during timeline playback and in the preview window
 
 ### Onion skin (§7.9)
-- [ ] Past/future counts (0–5), separate tints (blue past / orange future), opacity falloff
-- [ ] Tag-bounded vs global mode
-- [ ] Extra tinted layer sprites via the LUT shader `tint` / `layer_opacity`
-- [ ] Auto-hide during playback; `F3` toggle
+- [x] Past/future counts (0–5), separate tints (blue past / orange future), opacity falloff
+- [x] Tag-bounded vs global mode
+- [x] Extra tinted layer sprites via the LUT shader `tint` (rgb + mix strength) / `layer_opacity`; drawn in front of the current frame by default ("Front" checkbox switches to behind); timeline info says when there are no neighboring frames
+- [x] Auto-hide during playback; `F3` toggle; controls in the timeline toolbar
 
 ### Render tests
-- [ ] Golden PNG tests (real renderer) for LUT, transparency, cycling, onion skin (§11)
+- [x] Golden PNG tests (real renderer) for LUT, transparency + opacity, cycling, onion skin (§11) — `tests/render/`, windowed only
 
-**Exit:** waterfall demo (C3) runs at stated rate; onion skin at 3 past / 2 future stays ≥ 60 fps.
+**Exit:** waterfall demo (C3) runs at stated rate; onion skin at 3 past / 2 future stays ≥ 60 fps. ✅ Project → Open demo: Waterfall; `waterfall_test.gd` checks 12 steps/s over 10 s; `bench/onion_bench.gd` 4.3 ms/frame (231 fps), [ADR 0007](docs/adr/0007-onion-and-cycling-rendering.md). 262 tests, API coverage 100 %.
 
 ---
 

@@ -71,3 +71,15 @@ func test_double_click_layer_name_opens_rename(do_skip: bool = DisplayServer.get
 	var form: FormDialog = forms[0] as FormDialog
 	assert_str(form.title).is_equal("Rename Layer")
 	form.queue_free()
+
+
+func test_tab_toggles_cycling_and_f3_toggles_onion(do_skip: bool = DisplayServer.get_name() == "headless", skip_reason: String = "needs a window") -> void:
+	assert_bool(EditorContext.cycling.is_requested(&"tab")).is_false()
+	await _key(KEY_TAB)
+	assert_bool(EditorContext.cycling.is_requested(&"tab")).is_true()
+	await _key(KEY_TAB)
+	assert_bool(EditorContext.cycling.is_requested(&"tab")).is_false()
+	var onion_before: bool = EditorContext.state.onion_enabled
+	await _key(KEY_F3)
+	assert_bool(EditorContext.state.onion_enabled).is_not_equal(onion_before)
+	await _key(KEY_F3)

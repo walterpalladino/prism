@@ -2,8 +2,8 @@
 ## LMB sets FG, RMB sets BG (DPaint heritage). Double-click opens the color editor.
 ## Ctrl+click toggles the stencil lock.
 ## Drag a swatch to reorder: pixels follow their color (remap); Shift+drag keeps pixel indices.
-## FG is outlined in orange, BG in blue; locked entries get an orange underline and
-## shading ramps a blue bar above their span.
+## FG is outlined in orange, BG in blue; locked entries get an orange underline, shading
+## ramps a blue bar above their span and color-cycle ranges a teal bracket below (C1).
 class_name PaletteGrid
 extends Control
 
@@ -12,7 +12,8 @@ signal edit_requested(index: int)
 
 const COLUMNS: int = 8
 const SWATCH: int = 20
-const GAP: int = 6
+## Below each swatch: lock underline (2 px), cycle bracket (3 px); above: ramp bar.
+const GAP: int = 9
 const DRAG_THRESHOLD: float = 4.0
 ## Room for the 2 px FG/BG outlines around edge swatches.
 const MARGIN: int = 2
@@ -98,6 +99,9 @@ func _get_tooltip(at_position: Vector2) -> String:
 	var lines: PackedStringArray = ["%d  #%s" % [index, doc.palette.get_color(index).to_html(false)]]
 	if doc.stencil.is_locked(index):
 		lines.append_array(["Locked by stencil"])
+	for cycle: CycleRange in doc.cycles:
+		if cycle.contains(index):
+			lines.append_array(["Cycle %d–%d at %s steps/s%s" % [cycle.start_index, cycle.end_index, String.num(cycle.rate_hz, 2), "" if cycle.active else " (off)"]])
 	var ramp: Vector2i = doc.palette.find_ramp(index)
 	if ramp != Palette.NO_RAMP:
 		lines.append_array(["Ramp %d–%d" % [ramp.x, ramp.y]])
@@ -121,6 +125,17 @@ func _draw() -> void:
 			var rect: Rect2 = swatch_rect(i)
 			var extend: float = float(GAP) if i != ramp.y and (i + 1) % COLUMNS != 0 else 0.0
 			draw_rect(Rect2(rect.position - Vector2(0, 3), Vector2(SWATCH + extend, 2)), PrismTheme.BLUE)
+	for cycle: CycleRange in doc.cycles:
+		var color: Color = PrismTheme.CYCLE if cycle.active else PrismTheme.DIM
+		for i: int in range(cycle.start_index, mini(cycle.end_index + 1, palette.size())):
+			var cell: Rect2 = swatch_rect(i)
+			var joins_next: bool = i != cycle.end_index and (i + 1) % COLUMNS != 0
+			var y: float = cell.position.y + SWATCH + 4.0
+			draw_rect(Rect2(cell.position.x, y, SWATCH + (float(GAP) if joins_next else 0.0), 2), color)
+			if i == cycle.start_index:
+				draw_rect(Rect2(cell.position.x, y - 3.0, 2, 3), color)
+			if i == cycle.end_index:
+				draw_rect(Rect2(cell.end.x - 2.0, y - 3.0, 2, 3), color)
 	for i: int in palette.size():
 		if doc.stencil.is_locked(i):
 			var locked_rect: Rect2 = swatch_rect(i)

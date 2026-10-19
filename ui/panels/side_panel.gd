@@ -1,6 +1,6 @@
 ## Right-hand panel (concept C1): palette, ramps, stencil, brush, drawing mode and tool
-## options. Double-clicking a swatch opens the color editor popup. Layers and cycling
-## sections arrive in M4-M5.
+## options. Double-clicking a swatch opens the color editor popup. Layers live in the
+## timeline dock.
 class_name SidePanel
 extends PanelContainer
 
@@ -18,7 +18,7 @@ var _stencil_heading: Label
 var _stencil: StencilPanel
 
 
-func setup(state: EditorState, actions: PaletteActions) -> void:
+func setup(state: EditorState, actions: PaletteActions, cycling: ColorCycling) -> void:
 	_state = state
 	custom_minimum_size = Vector2(236, 0)
 	var scroll: ScrollContainer = ScrollContainer.new()
@@ -44,6 +44,11 @@ func setup(state: EditorState, actions: PaletteActions) -> void:
 	var ramps: RampPanel = RampPanel.new()
 	ramps.setup(state, actions)
 	box.add_child(ramps)
+
+	box.add_child(_heading("CYCLING"))
+	var cycles: CyclePanel = CyclePanel.new()
+	cycles.setup(state, actions, cycling)
+	box.add_child(cycles)
 
 	_stencil_heading = _heading("STENCIL  (~)")
 	box.add_child(_stencil_heading)
