@@ -156,6 +156,15 @@ export templates first (Editor → Manage Export Templates).
 Actions tab) and publishes it to GitHub Pages at <https://walterpalladino.github.io/prism/>.
 One-time setup: repository Settings → Pages → Build and deployment → Source: **GitHub Actions**.
 
+**Releases:** pushing a version tag builds that version and publishes a GitHub Release with the web
+build as `prism-web-<tag>.zip` (plus `LICENSE` and `CREDITS.md`). The tag sets the version shown in
+About; the site on Pages keeps following `main`.
+
+```sh
+git tag v0.1.0
+git push origin v0.1.0
+```
+
 The Web preset uses Godot's single-threaded template, because GitHub Pages cannot send the
 cross-origin isolation headers threaded builds need. To build it locally:
 

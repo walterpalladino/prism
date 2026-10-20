@@ -1,7 +1,8 @@
-# Builds the HTML5 (Web) export of PRISM and publishes it to GitHub Pages.
-#
-# One-time setup: repository Settings -> Pages -> Build and deployment -> Source: "GitHub Actions".
-# The site is then served at https://<user>.github.io/<repository>/.
+# Builds the HTML5 (Web) export of PRISM.
+#   - Push to main: publishes it to GitHub Pages (https://<user>.github.io/<repository>/).
+#     One-time setup: repository Settings -> Pages -> Build and deployment -> Source: "GitHub Actions".
+#   - Push a version tag (git tag v0.1.0 && git push origin v0.1.0): builds that version and publishes
+#     a GitHub Release with the web build as a zip. The tag sets the version shown in About.
 #
 # The Web preset uses Godot's single-threaded template (variant/thread_support=false): threaded
 # builds need cross-origin isolation headers (COOP/COEP), which GitHub Pages cannot send.
@@ -10,10 +11,11 @@ name: Web build
 on:
   push:
     branches: [main]
+    tags: ["v*"]
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write  # create releases on tags
   pages: write
   id-token: write
 
@@ -56,6 +58,10 @@ jobs:
           unzip -q -j /tmp/templates.tpz templates/web_nothreads_release.zip templates/version.txt -d "$templates"
           rm /tmp/godot.zip /tmp/templates.tpz
 
+      - name: Set the version from the tag
+        if: github.ref_type == 'tag'
+        run: sed -i "s/^config\/version=.*/config\/version=\"${GITHUB_REF_NAME#v}\"/" project.godot
+
       - name: Import the project
         run: ~/godot/godot --headless --path . --import
 
@@ -69,13 +75,28 @@ jobs:
           test -s build/web/index.wasm
 
       - uses: actions/configure-pages@v6
+        if: github.ref_type == 'branch'
 
       - uses: actions/upload-pages-artifact@v5
+        if: github.ref_type == 'branch'
         with:
           path: build/web
 
+      - name: Publish GitHub release
+        if: github.ref_type == 'tag'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          archive="prism-web-${GITHUB_REF_NAME}.zip"
+          (cd build/web && zip -qr "$GITHUB_WORKSPACE/$archive" .)
+          zip -qj "$archive" LICENSE CREDITS.md
+          gh release create "$GITHUB_REF_NAME" "$archive" --title "PRISM $GITHUB_REF_NAME" --generate-notes --notes \
+            "Web (HTML5) build. Play online at https://${GITHUB_REPOSITORY_OWNER}.github.io/${GITHUB_REPOSITORY#*/}/ or unzip and serve the folder over HTTP (browsers do not run it from file://), e.g. \`python3 -m http.server\` and open http://localhost:8000."
+
   deploy:
     needs: build
+    if: github.ref_type == 'branch'
     runs-on: ubuntu-latest
     environment:
       name: github-pages
