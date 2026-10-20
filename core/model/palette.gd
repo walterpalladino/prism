@@ -66,6 +66,24 @@ func find_ramp(index: int) -> Vector2i:
 	return NO_RAMP
 
 
+## The entry closest to `color` (squared RGB distance), skipping `exclude`; -1 if there is none.
+func nearest_index(color: Color, exclude: int = -1) -> int:
+	var best: int = -1
+	var best_distance: int = 0
+	for i: int in colors.size():
+		if i == exclude:
+			continue
+		var c: Color = colors[i]
+		var dr: int = c.r8 - color.r8
+		var dg: int = c.g8 - color.g8
+		var db: int = c.b8 - color.b8
+		var distance: int = dr * dr + dg * dg + db * db
+		if best == -1 or distance < best_distance:
+			best = i
+			best_distance = distance
+	return best
+
+
 func duplicate_palette() -> Palette:
 	var copy: Palette = Palette.new(colors)
 	copy.ramps = ramps.duplicate()

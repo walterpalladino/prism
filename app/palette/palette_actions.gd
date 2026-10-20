@@ -77,13 +77,88 @@ func reorder(from: int, to: int, remap: bool) -> void:
 	state.changed.emit()
 
 
+# --- adding and removing entries ---------------------------------------------
+
+## Inserts `color` at position `index` (0..size). FG and BG follow their colors.
+## Returns "" or why it was refused.
+func insert_color(index: int, color: Color) -> String:
+	commit_color()
+	if palette().size() >= Palette.MAX_COLORS:
+		return "The palette is full (%d colors)." % Palette.MAX_COLORS
+	if index < 0 or index > palette().size():
+		return "There is no palette position %d." % index
+	bus.execute(InsertPaletteColorCommand.new(index, color))
+	if state.fg >= index:
+		state.fg += 1
+	if state.bg >= index:
+		state.bg += 1
+	state.changed.emit()
+	return ""
+
+
+## "+": inserts a copy of the FG color right after it and makes the copy the FG.
+func add_color_after_fg() -> String:
+	var at: int = state.fg + 1
+	var error: String = insert_color(at, palette().get_color(state.fg))
+	if error == "":
+		state.set_fg(at)
+	return error
+
+
+## Pixels (in every image) that use entry `index`.
+func usage_count(index: int) -> int:
+	var count: int = 0
+	for image: IndexedImage in bus.document.images.values():
+		count += image.pixels.count(index)
+	return count
+
+
+## Why entry `index` can never be removed, or "" (pixels using it can still be remapped).
+func removal_blocker(index: int) -> String:
+	if not palette().has_index(index):
+		return "There is no palette entry %d." % index
+	if palette().size() <= 1:
+		return "A palette needs at least one color."
+	if index == bus.document.transparent_index:
+		return "Entry %d is the transparent color and cannot be removed." % index
+	return ""
+
+
+## Removes entry `index`. Pixels using it are repainted with `remap_to` (an index in the
+## current palette), which is required when any pixel uses it, so the picture never changes
+## silently. FG and BG follow their colors. Returns "" or why it was refused.
+func remove_color(index: int, remap_to: int = -1) -> String:
+	commit_color()
+	var blocker: String = removal_blocker(index)
+	if blocker != "":
+		return blocker
+	var target: int = remap_to if remap_to != index and palette().has_index(remap_to) else -1
+	if target == -1 and usage_count(index) > 0:
+		return "%d pixels use entry %d; choose a color to repaint them with." % [usage_count(index), index]
+	bus.execute(RemovePaletteColorCommand.new(index, target))
+	state.fg = _index_after_removal(state.fg, index, target)
+	state.bg = _index_after_removal(state.bg, index, target)
+	state.changed.emit()
+	return ""
+
+
+func _index_after_removal(value: int, removed: int, target: int) -> int:
+	if value == removed and target != -1:
+		value = target
+	if value > removed:
+		value -= 1
+	return clampi(value, 0, palette().size() - 1)
+
+
 ## Replaces the palette (file load or preset). If the new palette is shorter than the highest
-## index in use, it is padded with the old colors so no pixel points outside the palette.
-## Returns the number of padded entries.
+## index in use (pixels or color cycles), it is padded with the old colors so nothing points
+## outside the palette. Returns the number of padded entries.
 func load_palette(source: Palette, label: String = "Load Palette") -> int:
 	commit_color()
 	var replacement: Palette = source.duplicate_palette()
 	var needed: int = highest_used_index() + 1
+	for cycle: CycleRange in bus.document.cycles:
+		needed = maxi(needed, cycle.end_index + 1)
 	var padded: int = 0
 	while replacement.size() < needed:
 		@warning_ignore("return_value_discarded")

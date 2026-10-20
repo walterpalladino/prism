@@ -165,6 +165,8 @@ func set_frame_range(first: int, last: int) -> void:
 func clamp_to_document() -> void:
 	var doc: PrismDocument = bus.document
 	layer_index = clampi(layer_index, 0, doc.layers.size() - 1)
+	fg = clampi(fg, 0, doc.palette.size() - 1)
+	bg = clampi(bg, 0, doc.palette.size() - 1)
 	var previous: int = frame_index
 	frame_index = clampi(frame_index, 0, doc.frames.size() - 1)
 	frame_range = Vector2i(clampi(frame_range.x, 0, doc.frames.size() - 1), clampi(frame_range.y, 0, doc.frames.size() - 1))

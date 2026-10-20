@@ -34,7 +34,10 @@ var palette_texture: PaletteTexture
 
 func _init() -> void:
 	raster_backend = GDScriptRasterBackend.new()
-	bus = CommandBus.new(PrismDocument.create(DEFAULT_SIZE.x, DEFAULT_SIZE.y), History.new())
+	settings_store = SettingsStore.new()
+	var loaded_settings: Settings = settings_store.load_settings()
+	var first_palette: Palette = PalettePresets.by_id(loaded_settings.default_palette)
+	bus = CommandBus.new(PrismDocument.create(DEFAULT_SIZE.x, DEFAULT_SIZE.y, first_palette), History.new())
 	state = EditorState.new(bus)
 	selection = SelectionActions.new(bus, state)
 	palette = PaletteActions.new(bus, state)
@@ -64,9 +67,8 @@ func _init() -> void:
 	files = DiskFileSink.new()
 	exports = ExportActions.new(bus, state, files)
 	effects = CelEffects.new(bus, state)
-	settings_store = SettingsStore.new()
 	keybindings = KeybindingStore.new()
-	apply_settings(settings_store.load_settings())
+	apply_settings(loaded_settings)
 	textures = CelTextureCache.new()
 	palette_texture = PaletteTexture.new(bus.document.palette)
 	palette_display = PaletteDisplay.new(palette_texture, cycling)
@@ -85,9 +87,9 @@ func _on_playing_changed(playing: bool) -> void:
 		state.set_frame(playback.frame)
 
 
-## Replaces the open document with a new blank one.
+## Replaces the open document with a new blank one using the preferred palette.
 func new_document(size: Vector2i) -> void:
-	open_document(PrismDocument.create(size.x, size.y))
+	open_document(PrismDocument.create(size.x, size.y, PalettePresets.by_id(settings.default_palette)))
 
 
 ## Replaces the open document (new, demo, or loaded from disk in M6).

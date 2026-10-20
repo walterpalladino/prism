@@ -116,3 +116,16 @@ func test_apply_changes_the_input_map_and_restores() -> void:
 	assert_int((events[0] as InputEventKey).keycode).is_equal(KEY_K)
 	KeybindingStore.apply(Shortcuts.preset("modern"))
 	assert_int((InputMap.action_get_events(&"prism_tool_line")[0] as InputEventKey).keycode).is_equal((original[0] as InputEventKey).keycode)
+
+
+func test_default_palette_round_trip_and_fallback() -> void:
+	var store: SettingsStore = SettingsStore.new(PATH)
+	var settings: Settings = Settings.new()
+	assert_str(settings.default_palette).is_equal(PalettePresets.DEFAULT_ID)
+	settings.default_palette = "ega16"
+	assert_str(settings.duplicate_settings().default_palette).is_equal("ega16")
+	assert_str(store.save_settings(settings)).is_empty()
+	assert_str(store.load_settings().default_palette).is_equal("ega16")
+	settings.default_palette = "neon"
+	settings.sanitize()
+	assert_str(settings.default_palette).is_equal(PalettePresets.DEFAULT_ID)

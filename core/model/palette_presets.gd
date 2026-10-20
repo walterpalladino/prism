@@ -45,13 +45,60 @@ static func ega_16() -> Palette:
 ## `count` evenly spaced grays from black to white, as one ramp.
 static func grayscale(count: int = 16) -> Palette:
 	assert(count >= 2 and count <= Palette.MAX_COLORS)
+	return gradient(count, Color.BLACK, Color.WHITE)
+
+
+## Built-in presets as [id, display name] rows, for menus and the default-palette preference.
+const PRESETS: Array[Array] = [
+	["prism32", "PRISM 32"], ["pico8", "PICO-8 style 16"], ["ega16", "EGA 16"], ["gray16", "Grayscale 16"],
+]
+const DEFAULT_ID: String = "prism32"
+
+
+static func has_preset(id: String) -> bool:
+	return preset_index(id) != -1
+
+
+## Row of `id` in PRESETS, or -1.
+static func preset_index(id: String) -> int:
+	for i: int in PRESETS.size():
+		if PRESETS[i][0] == id:
+			return i
+	return -1
+
+
+## The preset named by `id`; PRISM 32 for an unknown id.
+static func by_id(id: String) -> Palette:
+	match id:
+		"pico8":
+			return pico8_style_16()
+		"ega16":
+			return ega_16()
+		"gray16":
+			return grayscale(16)
+	return default_32()
+
+
+## `count` (1–256) entries of `color` ("New palette…" with blank entries).
+static func blank(count: int, color: Color = Color.BLACK) -> Palette:
+	assert(count >= 1 and count <= Palette.MAX_COLORS)
+	var colors: PackedColorArray = PackedColorArray()
+	var resize_error: int = colors.resize(count)
+	assert(resize_error == OK)
+	colors.fill(color)
+	return Palette.new(colors)
+
+
+## `count` (1–256) entries blending evenly from `from` to `to`; two or more form one ramp.
+static func gradient(count: int, from: Color, to: Color) -> Palette:
+	assert(count >= 1 and count <= Palette.MAX_COLORS)
 	var colors: PackedColorArray = PackedColorArray()
 	var resize_error: int = colors.resize(count)
 	assert(resize_error == OK)
 	for i: int in count:
-		var v: float = float(i) / float(count - 1)
-		colors[i] = Color(v, v, v)
+		colors[i] = from.lerp(to, float(i) / float(maxi(count - 1, 1)))
 	var palette: Palette = Palette.new(colors)
-	var added: bool = palette.add_ramp(0, count - 1)
-	assert(added)
+	if count >= 2:
+		var added: bool = palette.add_ramp(0, count - 1)
+		assert(added)
 	return palette

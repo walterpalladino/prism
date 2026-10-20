@@ -79,3 +79,36 @@ func test_colors_are_stored_as_opaque_8_bit() -> void:
 	palette.set_color(0, Color(0.001, 0.999, 0.5))
 	assert_that(palette.get_color(0)).is_equal(Color8(0, 255, 128))
 	assert_float(palette.get_color(0).a).is_equal(1.0)
+
+
+func test_nearest_index_skips_the_excluded_entry() -> void:
+	var palette: Palette = PalettePresets.ega_16()
+	assert_int(palette.nearest_index(Color.html("#0000a0"))).is_equal(1)
+	assert_int(palette.nearest_index(Color.html("#0000aa"), 1)).is_equal(8)
+	assert_int(Palette.new(PackedColorArray([Color.RED])).nearest_index(Color.RED, 0)).is_equal(-1)
+
+
+func test_blank_and_gradient_presets() -> void:
+	var blank: Palette = PalettePresets.blank(3, Color.RED)
+	assert_int(blank.size()).is_equal(3)
+	assert_that(blank.get_color(2)).is_equal(Color.RED)
+	assert_bool(blank.ramps.is_empty()).is_true()
+	assert_int(PalettePresets.blank(1).size()).is_equal(1)
+	var gradient: Palette = PalettePresets.gradient(5, Color.BLACK, Color.html("#ff0000"))
+	assert_str(gradient.get_color(2).to_html(false)).is_equal("800000")
+	assert_that(gradient.get_color(4)).is_equal(Color.RED)
+	assert_that(gradient.ramps).is_equal([Vector2i(0, 4)])
+	var single: Palette = PalettePresets.gradient(1, Color.BLUE, Color.RED)
+	assert_that(single.get_color(0)).is_equal(Color.BLUE)
+	assert_bool(single.ramps.is_empty()).is_true()
+
+
+func test_presets_by_id() -> void:
+	assert_bool(PalettePresets.has_preset("ega16")).is_true()
+	assert_bool(PalettePresets.has_preset("nope")).is_false()
+	assert_int(PalettePresets.preset_index("pico8")).is_equal(1)
+	for preset: Array in PalettePresets.PRESETS:
+		var id: String = preset[0]
+		assert_int(PalettePresets.by_id(id).size()).is_greater(0)
+	assert_that(PalettePresets.by_id("gray16").colors).is_equal(PalettePresets.grayscale(16).colors)
+	assert_that(PalettePresets.by_id("nope").colors).is_equal(PalettePresets.default_32().colors)

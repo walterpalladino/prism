@@ -7,7 +7,7 @@ const NEW_SIZES: Array[Vector2i] = [Vector2i(16, 16), Vector2i(32, 32), Vector2i
 
 ## Menu name -> list of [label, action, icon] ("" action = separator, "-" = disabled placeholder).
 const MENUS: Array[Array] = [
-	["Project", [["New 16×16", "new_16", "new"], ["New 32×32", "new_32", "new"], ["New 64×64", "new_64", "new"], ["New 128×128", "new_128", "new"], ["New 256×256", "new_256", "new"], ["", "", ""], ["Open…", "prism_open", "folder"], ["Save", "prism_save", "save"], ["Save as…", "prism_save_as", "save"], ["", "", ""], ["Import PNG into cel…", "import_png", "preview"], ["New from PNG…", "new_from_png", "preview"], ["", "", ""], ["Export PNG (current frame)…", "export_png", ""], ["Export PNG sequence…", "export_sequence", ""], ["Export sprite sheet (all frames in one PNG + JSON)…", "export_sheet", ""], ["Export Godot SpriteFrames…", "export_sprite_frames", ""], ["Export GIF…", "export_gif", ""], ["", "", ""], ["Open demo: Waterfall (color cycling)", "demo_waterfall", "play"], ["", "", ""], ["Load palette…", "palette_load", "folder"], ["Save palette…", "palette_save", "save"], ["", "", ""], ["Preferences…", "preferences", ""], ["", "", ""], ["Quit", "quit", "close"]]],
+	["Project", [["New 16×16", "new_16", "new"], ["New 32×32", "new_32", "new"], ["New 64×64", "new_64", "new"], ["New 128×128", "new_128", "new"], ["New 256×256", "new_256", "new"], ["", "", ""], ["Open…", "prism_open", "folder"], ["Save", "prism_save", "save"], ["Save as…", "prism_save_as", "save"], ["", "", ""], ["Import PNG into cel…", "import_png", "preview"], ["New from PNG…", "new_from_png", "preview"], ["", "", ""], ["Export PNG (current frame)…", "export_png", ""], ["Export PNG sequence…", "export_sequence", ""], ["Export sprite sheet (all frames in one PNG + JSON)…", "export_sheet", ""], ["Export Godot SpriteFrames…", "export_sprite_frames", ""], ["Export GIF…", "export_gif", ""], ["", "", ""], ["Open demo: Waterfall (color cycling)", "demo_waterfall", "play"], ["", "", ""], ["New palette…", "palette_new", "new"], ["Load palette…", "palette_load", "folder"], ["Save palette…", "palette_save", "save"], ["", "", ""], ["Preferences…", "preferences", ""], ["", "", ""], ["Quit", "quit", "close"]]],
 	["Edit", [["Undo", "prism_undo", "undo"], ["Redo", "prism_redo", "redo"], ["", "", ""], ["Cut", "prism_cut", "cut"], ["Copy", "prism_copy", "copy"], ["Paste", "prism_paste", "paste"], ["", "", ""], ["Select all", "prism_select_all", "select"], ["Deselect", "deselect", "close"]]],
 	["Picture", [["Palette: PRISM 32", "preset_default", ""], ["Palette: PICO-8 style 16", "preset_pico8", ""], ["Palette: EGA 16", "preset_ega", ""], ["Palette: Grayscale 16", "preset_gray", ""], ["", "", ""], ["Invert stencil", "stencil_invert", "lock"], ["Lock all except FG", "stencil_all_but_fg", "lock"], ["Clear stencil", "stencil_clear", "unlock"], ["", "", ""], ["Clear cel", "cel_clear", "trash"]]],
 	["Brush", [["Restore built-in", "prism_brush_restore", "brush"], ["Flip horizontal", "prism_brush_flip_h", "flip_h"], ["Flip vertical", "prism_brush_flip_v", "flip_v"], ["Rotate 90°", "prism_brush_rotate", "rotate"]]],
@@ -280,6 +280,8 @@ func run_action(action: String) -> void:
 			_load_preset(PalettePresets.ega_16(), "EGA 16")
 		"preset_gray":
 			_load_preset(PalettePresets.grayscale(16), "Grayscale 16")
+		"palette_new":
+			_open_new_palette()
 		"palette_load":
 			_open_palette_dialog(FileDialog.FILE_MODE_OPEN_FILE)
 		"palette_save":
@@ -518,6 +520,7 @@ func _open_preferences() -> void:
 	form.add_color("checker_b", "Checker 2", current.checker_b)
 	form.add_color("onion_past", "Onion past", current.onion_past_tint)
 	form.add_color("onion_future", "Onion future", current.onion_future_tint)
+	form.add_choice("palette", "New documents", _preset_names(), PalettePresets.preset_index(current.default_palette))
 	Signals.on(form.submitted, func(values: Dictionary) -> void:
 		var updated: Settings = current.duplicate_settings()
 		var theme_index: int = values["theme"]
@@ -532,6 +535,8 @@ func _open_preferences() -> void:
 		updated.checker_b = values["checker_b"]
 		updated.onion_past_tint = values["onion_past"]
 		updated.onion_future_tint = values["onion_future"]
+		var palette_index: int = values["palette"]
+		updated.default_palette = PalettePresets.PRESETS[palette_index][0]
 		var rebuild: bool = updated.theme != current.theme or updated.key_preset != current.key_preset
 		_show_result(EditorContext.save_settings(updated), "")
 		get_window().content_scale_factor = updated.ui_scale
@@ -607,6 +612,36 @@ func _show_about() -> void:
 	Signals.on(dialog.confirmed, dialog.queue_free)
 	Signals.on(dialog.canceled, dialog.queue_free)
 	dialog.popup_centered()
+
+
+static func _preset_names() -> PackedStringArray:
+	var names: PackedStringArray = PackedStringArray()
+	for preset: Array in PalettePresets.PRESETS:
+		var preset_name: String = preset[1]
+		names.append_array([preset_name])
+	return names
+
+
+const NEW_PALETTE_KINDS: PackedStringArray = ["Blank (every entry the first color)", "Gradient (first to last color, as a ramp)"]
+
+
+## "New palette…": N blank entries, or a gradient between two colors. Replaces the palette
+## (undoable); entries the picture still uses beyond N are kept, as with presets.
+func _open_new_palette() -> void:
+	var form: FormDialog = FormDialog.new()
+	form.title = "New palette"
+	form.add_number("count", "Colors", 16, 1, Palette.MAX_COLORS)
+	form.add_choice("kind", "Fill", NEW_PALETTE_KINDS, 1)
+	form.add_color("from", "First color", Color.BLACK)
+	form.add_color("to", "Last color", Color.WHITE)
+	Signals.on(form.submitted, func(values: Dictionary) -> void:
+		var count: int = values["count"]
+		var kind: int = values["kind"]
+		var from: Color = values["from"]
+		var to: Color = values["to"]
+		var palette: Palette = PalettePresets.blank(count, from) if kind == 0 else PalettePresets.gradient(count, from, to)
+		_load_preset(palette, "New palette"))
+	form.open(self)
 
 
 func _load_preset(palette: Palette, preset_name: String) -> void:

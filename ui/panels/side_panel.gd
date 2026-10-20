@@ -34,6 +34,10 @@ func setup(state: EditorState, actions: PaletteActions, cycling: ColorCycling) -
 	grid.name = "PaletteGrid"
 	grid.setup(state, actions)
 	box.add_child(grid)
+	var entry_bar: PaletteEntryBar = PaletteEntryBar.new()
+	entry_bar.name = "PaletteEntryBar"
+	entry_bar.setup(state, actions)
+	box.add_child(entry_bar)
 	var color_dialog: ColorEditDialog = ColorEditDialog.new()
 	color_dialog.name = "ColorEditDialog"
 	color_dialog.setup(actions)

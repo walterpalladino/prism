@@ -17,6 +17,8 @@ var checker_a: Color = Color(0.227, 0.227, 0.267)
 var checker_b: Color = Color(0.267, 0.267, 0.31)
 var onion_past_tint: Color = Color("#3d7bff")
 var onion_future_tint: Color = Color("#ff8a3d")
+## Preset id (PalettePresets.PRESETS) that new documents start with.
+var default_palette: String = PalettePresets.DEFAULT_ID
 
 
 func duplicate_settings() -> Settings:
@@ -29,6 +31,7 @@ func duplicate_settings() -> Settings:
 	copy.checker_b = checker_b
 	copy.onion_past_tint = onion_past_tint
 	copy.onion_future_tint = onion_future_tint
+	copy.default_palette = default_palette
 	return copy
 
 
@@ -38,5 +41,7 @@ func sanitize() -> void:
 		theme = THEMES[0]
 	if not KEY_PRESETS.has(key_preset):
 		key_preset = KEY_PRESETS[0]
+	if not PalettePresets.has_preset(default_palette):
+		default_palette = PalettePresets.DEFAULT_ID
 	ui_scale = clampf(ui_scale, MIN_UI_SCALE, MAX_UI_SCALE)
 	autosave_interval_s = clampi(autosave_interval_s, 0, 3600)

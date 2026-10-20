@@ -133,3 +133,90 @@ func test_cancel_preview_restores_and_records_nothing() -> void:
 	assert_bool(fx.palette.has_pending_edit()).is_false()
 	assert_bool(fx.bus.history.can_undo()).is_false()
 	assert_int(changes[0]).is_equal(2)
+
+
+func test_add_color_after_fg_copies_fg_and_selects_it() -> void:
+	var fx: AppFixture = _fx()
+	fx.state.set_fg(4)
+	fx.state.set_bg(9)
+	fx.image().set_index(0, 0, 9)
+	assert_str(fx.palette.add_color_after_fg()).is_empty()
+	assert_int(fx.palette.palette().size()).is_equal(33)
+	assert_int(fx.state.fg).is_equal(5)
+	assert_that(fx.palette.palette().get_color(5)).is_equal(fx.palette.palette().get_color(4))
+	assert_int(fx.state.bg).is_equal(10)
+	assert_int(fx.image().get_index(0, 0)).is_equal(10)
+	assert_str(fx.bus.history.undo_label()).is_equal("Add Color 5")
+	fx.bus.undo()
+	assert_int(fx.palette.palette().size()).is_equal(32)
+	assert_int(fx.image().get_index(0, 0)).is_equal(9)
+
+
+func test_insert_color_limits() -> void:
+	var fx: AppFixture = _fx()
+	assert_str(fx.palette.insert_color(-1, Color.RED)).is_not_empty()
+	assert_str(fx.palette.insert_color(33, Color.RED)).is_not_empty()
+	fx.palette.load_palette(PalettePresets.blank(Palette.MAX_COLORS))
+	fx.state.set_fg(255)
+	assert_str(fx.palette.add_color_after_fg()).contains("full")
+	assert_int(fx.palette.palette().size()).is_equal(Palette.MAX_COLORS)
+
+
+func test_remove_unused_color() -> void:
+	var fx: AppFixture = _fx()
+	fx.state.set_fg(5)
+	fx.state.set_bg(7)
+	assert_int(fx.palette.usage_count(5)).is_equal(0)
+	assert_str(fx.palette.remove_color(5)).is_empty()
+	assert_int(fx.palette.palette().size()).is_equal(31)
+	assert_int(fx.state.fg).is_equal(5)
+	assert_int(fx.state.bg).is_equal(6)
+
+
+func test_remove_used_color_needs_a_target() -> void:
+	var fx: AppFixture = _fx()
+	var image: IndexedImage = fx.image()
+	image.set_index(0, 0, 5)
+	image.set_index(1, 0, 5)
+	image.set_index(2, 0, 9)
+	var color_9: Color = fx.palette.palette().get_color(9)
+	fx.state.set_fg(5)
+	assert_int(fx.palette.usage_count(5)).is_equal(2)
+	assert_str(fx.palette.remove_color(5)).contains("2 pixels")
+	assert_str(fx.palette.remove_color(5, 5)).is_not_empty()
+	assert_int(fx.palette.palette().size()).is_equal(32)
+	assert_str(fx.palette.remove_color(5, 9)).is_empty()
+	assert_int(image.get_index(0, 0)).is_equal(8)
+	assert_int(image.get_index(2, 0)).is_equal(8)
+	assert_that(fx.palette.palette().get_color(8)).is_equal(color_9)
+	assert_int(fx.state.fg).is_equal(8)
+	fx.bus.undo()
+	assert_int(image.get_index(0, 0)).is_equal(5)
+	assert_int(image.get_index(2, 0)).is_equal(9)
+
+
+func test_removal_blockers() -> void:
+	var fx: AppFixture = _fx()
+	assert_str(fx.palette.removal_blocker(0)).contains("transparent")
+	assert_str(fx.palette.removal_blocker(40)).is_not_empty()
+	assert_str(fx.palette.removal_blocker(3)).is_empty()
+	assert_str(fx.palette.remove_color(0)).contains("transparent")
+	fx.palette.load_palette(PalettePresets.blank(1))
+	assert_str(fx.palette.removal_blocker(0)).contains("at least one")
+
+
+func test_undo_of_add_keeps_fg_inside_the_palette() -> void:
+	var fx: AppFixture = _fx()
+	fx.state.set_fg(31)
+	fx.palette.add_color_after_fg()
+	assert_int(fx.state.fg).is_equal(32)
+	fx.bus.undo()
+	fx.state.clamp_to_document()
+	assert_int(fx.state.fg).is_equal(31)
+
+
+func test_load_palette_pads_to_cover_color_cycles() -> void:
+	var fx: AppFixture = _fx()
+	assert_str(fx.palette.add_cycle(20, 24, 4.0, 1)).is_empty()
+	assert_int(fx.palette.load_palette(PalettePresets.blank(4))).is_equal(21)
+	assert_array(DocumentValidator.validate(fx.bus.document)).is_empty()

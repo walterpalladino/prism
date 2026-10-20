@@ -26,6 +26,7 @@ func load_settings() -> Settings:
 	settings.checker_b = _color(config, "checker_b", settings.checker_b)
 	settings.onion_past_tint = _color(config, "onion_past_tint", settings.onion_past_tint)
 	settings.onion_future_tint = _color(config, "onion_future_tint", settings.onion_future_tint)
+	settings.default_palette = _string(config, "default_palette", settings.default_palette)
 	settings.sanitize()
 	return settings
 
@@ -41,6 +42,7 @@ func save_settings(settings: Settings) -> String:
 	config.set_value(SECTION, "checker_b", "#" + settings.checker_b.to_html(false))
 	config.set_value(SECTION, "onion_past_tint", "#" + settings.onion_past_tint.to_html(false))
 	config.set_value(SECTION, "onion_future_tint", "#" + settings.onion_future_tint.to_html(false))
+	config.set_value(SECTION, "default_palette", settings.default_palette)
 	var error: int = config.save(path)
 	return "" if error == OK else "could not save settings to %s (error %d)" % [path, error]
 
