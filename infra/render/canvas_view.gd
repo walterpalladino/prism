@@ -11,6 +11,8 @@ const ZOOM_LEVELS: PackedInt32Array = [1, 2, 3, 4, 5, 6, 8, 10, 12, 16, 20, 24, 
 const GRID_MIN_ZOOM: int = 6
 ## How far (view pixels) a canvas larger than the view may be scrolled past its edge.
 const OVERSCROLL: float = 48.0
+## Trackpad pinch: how much the fingers must spread (or close, 1 / this) for one zoom step.
+const PINCH_STEP: float = 1.3
 const WORKSPACE_COLOR: Color = Color("#15161c")
 const GHOST_OPACITY: float = 0.75
 const CHECKER_SHADER: Shader = preload("res://infra/render/checkerboard.gdshader")
@@ -47,6 +49,8 @@ var _hovering: bool = false
 var _panning: bool = false
 var _pan_from: Vector2
 var _needs_fit: bool = true
+## Pinch scale gathered since the last zoom step (gesture events arrive in small increments).
+var _pinch: float = 1.0
 
 
 func _init() -> void:
@@ -234,9 +238,21 @@ func _gui_input(event: InputEvent) -> void:
 		accept_event()
 		return
 	var magnify: InputEventMagnifyGesture = event as InputEventMagnifyGesture
-	if magnify != null and absf(magnify.factor - 1.0) > 0.02:
-		zoom_step(1 if magnify.factor > 1.0 else -1, magnify.position)
+	if magnify != null:
+		pinch(magnify.factor, magnify.position)
 		accept_event()
+
+
+## Adds one pinch-gesture increment; zooms one step each time the gathered scale passes
+## PINCH_STEP (in) or 1 / PINCH_STEP (out).
+func pinch(factor: float, focus: Vector2) -> void:
+	_pinch *= factor
+	if _pinch >= PINCH_STEP:
+		_pinch = 1.0
+		zoom_step(1, focus)
+	elif _pinch <= 1.0 / PINCH_STEP:
+		_pinch = 1.0
+		zoom_step(-1, focus)
 
 
 func _handle_button(event: InputEventMouseButton) -> void:
