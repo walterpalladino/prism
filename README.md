@@ -149,3 +149,8 @@ full loop of animation and cycles (capped at 500 frames, with a warning).
 
 `export_presets.cfg` defines Windows x86_64, macOS universal and Linux x86_64. Install the Godot 4.7.2
 export templates first (Editor → Manage Export Templates).
+
+## License
+
+PRISM is released under the [MIT License](LICENSE). Third-party components (Godot Engine, Pixelarticons,
+gdUnit4) and their licenses are listed in [CREDITS.md](CREDITS.md); the About dialog also shows them.
