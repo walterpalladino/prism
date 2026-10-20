@@ -603,7 +603,7 @@ func _show_about() -> void:
 	heading.text = "PRISM %s — palette-first pixel painter with a modern animation timeline.\nDPaint's hands, Aseprite's timeline. Built with Godot %s." % [ProjectSettings.get_setting("application/config/version", ""), Engine.get_version_info()["string"]]
 	box.add_child(heading)
 	var text: TextEdit = TextEdit.new()
-	text.text = credits
+	text.text = credits + "\n\n" + engine_notices()
 	text.editable = false
 	text.custom_minimum_size = Vector2(560, 320)
 	box.add_child(text)
@@ -612,6 +612,25 @@ func _show_about() -> void:
 	Signals.on(dialog.confirmed, dialog.queue_free)
 	Signals.on(dialog.canceled, dialog.queue_free)
 	dialog.popup_centered()
+
+
+## Godot's license plus the copyright and license of every third-party component built into the
+## engine, as the engine reports them. Exported builds must ship these notices.
+static func engine_notices() -> String:
+	var lines: PackedStringArray = ["## Godot Engine and its third-party components", "", Engine.get_license_text(), ""]
+	for component: Dictionary in Engine.get_copyright_info():
+		var component_name: String = component["name"]
+		lines.append_array(["- " + component_name])
+		var parts: Array = component["parts"]
+		for part: Dictionary in parts:
+			var copyrights: PackedStringArray = part["copyright"]
+			var license: String = part["license"]
+			lines.append_array(["    (c) %s — %s" % ["; ".join(copyrights), license]])
+	var licenses: Dictionary = Engine.get_license_info()
+	for license_name: String in licenses:
+		var license_text: String = licenses[license_name]
+		lines.append_array(["", "### " + license_name, "", license_text])
+	return "\n".join(lines)
 
 
 static func _preset_names() -> PackedStringArray:
