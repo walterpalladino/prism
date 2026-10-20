@@ -22,7 +22,7 @@ func setup(state: EditorState, actions: PaletteActions, cycling: ColorCycling) -
 	var row: HBoxContainer = HBoxContainer.new()
 	add_child(row)
 	var add: Button = Button.new()
-	add.text = "Cycle FG→BG"
+	add.text = "Cycle FG–BG"
 	add.tooltip_text = "Make the span between the FG and BG entries a color-cycle range"
 	add.focus_mode = Control.FOCUS_NONE
 	add.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -74,7 +74,7 @@ func _row(index: int, cycle: CycleRange) -> HBoxContainer:
 		_show_error(_actions.update_cycle(index, cycle.start_index, cycle.end_index, cycle.rate_hz, cycle.step, on)))
 	row.add_child(active)
 	var label: Label = Label.new()
-	label.text = "%d–%d  %s/s %s" % [cycle.start_index, cycle.end_index, String.num(cycle.rate_hz, 2), "→" if cycle.step > 0 else "←"]
+	label.text = "%d–%d  %s/s %s" % [cycle.start_index, cycle.end_index, String.num(cycle.rate_hz, 2), "fwd" if cycle.step > 0 else "rev"]
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(label)
 	var edit: Button = Button.new()

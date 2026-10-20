@@ -368,7 +368,7 @@ func _draw_tags(doc: PrismDocument) -> void:
 	for tag: Tag in doc.tags:
 		var rect: Rect2 = Rect2(LAYER_COLUMN + tag.from_frame * CELL + 1.0, 2.0, (tag.to_frame - tag.from_frame + 1) * CELL - 2.0, TAG_ROW - 4.0)
 		draw_rect(rect, tag.color)
-		var glyph: String = ["→", "←", "↔"][tag.direction]
+		var glyph: String = [">", "<", "<>"][tag.direction]
 		var text_color: Color = Color.BLACK if tag.color.get_luminance() > 0.5 else Color.WHITE
 		_text(rect.position + Vector2(4, 11), "%s %s" % [tag.tag_name, glyph], text_color, 10, rect.size.x - 6.0)
 

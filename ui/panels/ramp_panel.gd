@@ -17,7 +17,7 @@ func setup(state: EditorState, actions: PaletteActions) -> void:
 	var row: HBoxContainer = HBoxContainer.new()
 	add_child(row)
 	var add: Button = Button.new()
-	add.text = "Ramp FG→BG"
+	add.text = "Ramp FG–BG"
 	add.tooltip_text = "Make the span between the FG and BG entries a shading ramp (dark to light)"
 	add.focus_mode = Control.FOCUS_NONE
 	add.size_flags_horizontal = Control.SIZE_EXPAND_FILL

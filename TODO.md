@@ -309,6 +309,9 @@ Not part of the prototype milestones; set up once the repository is on GitHub. U
 - [ ] GitHub Actions: render tests on Linux with a virtual display (`--rendering-driver opengl3`) (§11)
 - [ ] Nightly export builds for the three desktop presets
 - [ ] Log performance benchmarks per run
+- [x] GitHub Actions: Web (HTML5) export published to GitHub Pages (`.github/workflows/web.yml`)
+- [ ] Web build: open/import files through the browser's file picker and save/export as downloads
+      (`JavaScriptBridge`), behind `DocumentRepository` / `FileSink`
 
 ---
 

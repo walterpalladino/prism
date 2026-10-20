@@ -147,8 +147,27 @@ full loop of animation and cycles (capped at 500 frames, with a warning).
 
 ## Building PRISM
 
-`export_presets.cfg` defines Windows x86_64, macOS universal and Linux x86_64. Install the Godot 4.7.2
+`export_presets.cfg` defines Windows x86_64, macOS universal, Linux x86_64 and Web. Install the Godot 4.7.2
 export templates first (Editor → Manage Export Templates).
+
+### Web (HTML5) build
+
+`.github/workflows/web.yml` exports the **Web** preset on every push to `main` (or on demand from the
+Actions tab) and publishes it to GitHub Pages at <https://walterpalladino.github.io/prism/>.
+One-time setup: repository Settings → Pages → Build and deployment → Source: **GitHub Actions**.
+
+The Web preset uses Godot's single-threaded template, because GitHub Pages cannot send the
+cross-origin isolation headers threaded builds need. To build it locally:
+
+```sh
+godot --headless --path . --export-release "Web" build/web/index.html
+python3 -m http.server --directory build/web   # then open http://localhost:8000
+```
+
+Limitations of the web build today: file dialogs only see the browser's private storage, so Open,
+Save, Import and Export cannot reach files on your computer yet. Autosave and settings persist in
+the browser (IndexedDB). UI text must use characters of Godot's built-in font (there are no system
+fonts to fall back on); `tests/ui/glyphs_test.gd` checks this.
 
 ## License
 
