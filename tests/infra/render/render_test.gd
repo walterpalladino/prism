@@ -62,7 +62,8 @@ func test_canvas_view_coordinates_and_zoom() -> void:
 	assert_that(view.get_canvas_size()).is_equal(Vector2i(64, 32))
 	var p: Vector2i = Vector2i(7, 3)
 	assert_that(view.local_to_pixel(view.pixel_to_local(p))).is_equal(p)
-	var focus: Vector2 = view.pixel_to_local(p)
+	var focus: Vector2 = view.size / 2.0
+	p = view.local_to_pixel(focus)
 	view.zoom_step(1, focus)
 	assert_int(view.zoom).is_equal(12)
 	assert_that(view.local_to_pixel(focus)).is_equal(p)
@@ -80,6 +81,36 @@ func test_canvas_view_coordinates_and_zoom() -> void:
 	event.shift_pressed = true
 	event.alt_pressed = true
 	assert_int(CanvasView.modifiers_of(event)).is_equal(Tool.MOD_SHIFT | Tool.MOD_ALT)
+	remove_child(view)
+
+
+func test_canvas_pan_keeps_the_canvas_in_view() -> void:
+	var fx: AppFixture = AppFixture.new(64, 32)
+	var view: CanvasView = auto_free(CanvasView.new())
+	add_child(view)
+	view.size = Vector2(800, 600)
+	view.setup(fx.bus, fx.state, fx.controller, CelTextureCache.new(), PaletteTexture.new(fx.bus.document.palette))
+	view.set_zoom(10, Vector2(400, 300))
+	# 640×320 fits in 800×600: it stays fully visible.
+	assert_that(view.clamp_pan(Vector2(-5000, 5000))).is_equal(Vector2(0, 280))
+	assert_that(view.clamp_pan(Vector2(100, 50))).is_equal(Vector2(100, 50))
+	# At 20× (1280×640) both axes overflow: scroll up to OVERSCROLL past each edge.
+	view.set_zoom(20, Vector2(400, 300))
+	var lowest: Vector2 = Vector2(800 - 1280, 600 - 640) - Vector2.ONE * CanvasView.OVERSCROLL
+	assert_that(view.clamp_pan(Vector2(5000, -5000))).is_equal(Vector2(CanvasView.OVERSCROLL, lowest.y))
+	assert_that(view.clamp_pan(Vector2(-5000, 0))).is_equal(Vector2(lowest.x, 0))
+	# Dragging with the middle button far off the view is clamped too.
+	var press: InputEventMouseButton = InputEventMouseButton.new()
+	press.button_index = MOUSE_BUTTON_MIDDLE
+	press.pressed = true
+	press.position = Vector2(400, 300)
+	view._gui_input(press)
+	var motion: InputEventMouseMotion = InputEventMouseMotion.new()
+	motion.position = Vector2(-9000, 9000)
+	view._gui_input(motion)
+	press.pressed = false
+	view._gui_input(press)
+	assert_that(view.pan).is_equal(Vector2(lowest.x, CanvasView.OVERSCROLL))
 	remove_child(view)
 
 

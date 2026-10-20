@@ -9,6 +9,8 @@ signal zoom_changed(zoom: int)
 
 const ZOOM_LEVELS: PackedInt32Array = [1, 2, 3, 4, 5, 6, 8, 10, 12, 16, 20, 24, 32]
 const GRID_MIN_ZOOM: int = 6
+## How far (view pixels) a canvas larger than the view may be scrolled past its edge.
+const OVERSCROLL: float = 48.0
 const WORKSPACE_COLOR: Color = Color("#15161c")
 const GHOST_OPACITY: float = 0.75
 const CHECKER_SHADER: Shader = preload("res://infra/render/checkerboard.gdshader")
@@ -159,6 +161,22 @@ func fit() -> void:
 	zoom_changed.emit(zoom)
 
 
+## `p` limited so the canvas stays in view: on an axis where it fits, it stays fully visible;
+## where it is larger than the view, it can scroll only OVERSCROLL past its edges.
+func clamp_pan(p: Vector2) -> Vector2:
+	if size.x <= 0.0 or size.y <= 0.0:
+		return p
+	var canvas: Vector2 = Vector2(get_canvas_size()) * zoom
+	var result: Vector2 = p
+	for axis: int in 2:
+		var slack: float = size[axis] - canvas[axis]
+		if slack >= 0.0:
+			result[axis] = clampf(p[axis], 0.0, slack)
+		else:
+			result[axis] = clampf(p[axis], slack - OVERSCROLL, OVERSCROLL)
+	return result.round()
+
+
 func _focus_or_center(focus: Vector2) -> Vector2:
 	if focus.x >= 0.0 and Rect2(Vector2.ZERO, size).has_point(focus):
 		return focus
@@ -166,6 +184,7 @@ func _focus_or_center(focus: Vector2) -> Vector2:
 
 
 func _apply_transform() -> void:
+	pan = clamp_pan(pan)
 	_world.position = pan
 	_world.scale = Vector2(zoom, zoom)
 	_overlay.zoom = zoom
@@ -400,9 +419,13 @@ func _on_document_replaced() -> void:
 
 
 func _on_resized() -> void:
-	if _needs_fit and _bus != null and size.x > 0.0:
+	if _bus == null or size.x <= 0.0:
+		return
+	if _needs_fit:
 		fit()
 		_needs_fit = false
+	else:
+		_apply_transform()
 
 
 func _on_state_changed() -> void:
